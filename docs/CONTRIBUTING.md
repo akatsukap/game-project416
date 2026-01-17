@@ -74,10 +74,10 @@ cd game-project416
 # ブラウザで index.html を直接開く
 # または、簡易サーバーを起動する方法:
 
-# Python 3 の場合
+# Python 3 の場合（推奨）
 python3 -m http.server 8000
 
-# Python 2 の場合
+# Python 2 の場合（非推奨・EOL済み）
 python -m SimpleHTTPServer 8000
 
 # VS Code を使用している場合
