@@ -71,10 +71,20 @@ GitHub で Pull Request を作成し、以下を記載:
 git clone https://github.com/akatsukap/game-project416.git
 cd game-project416
 
-# ブラウザで index.html を開く
-# または、簡易サーバーを起動
-python -m http.server 8000
-# http://localhost:8000 にアクセス
+# ブラウザで index.html を直接開く
+# または、簡易サーバーを起動する方法:
+
+# Python 3 の場合
+python3 -m http.server 8000
+
+# Python 2 の場合
+python -m SimpleHTTPServer 8000
+
+# VS Code を使用している場合
+# Live Server 拡張機能を使用することを推奨
+
+# サーバー起動後、ブラウザで以下にアクセス
+# http://localhost:8000
 ```
 
 ## 📏 コーディング規約
