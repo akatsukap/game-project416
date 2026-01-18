@@ -137,3 +137,7 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+.kiro/specs/babanuki-game/design.md
+.kiro/specs/babanuki-game/requirements.md
+.kiro/steering/japanese-response.md
+.kiro/specs/babanuki-game/tasks.md
