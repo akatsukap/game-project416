@@ -1,0 +1,84 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+    background-color: #2c3e50;
+    color: white;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    margin-bottom: 20px;
+}
+
+#game-info {
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+}
+
+#game-board {
+    display: grid;
+    grid-template-columns: repeat(4, 80px); /* 4列 */
+    gap: 10px;
+    justify-content: center;
+    margin: 0 auto;
+    max-width: 400px;
+}
+
+.card {
+    width: 80px;
+    height: 100px;
+    background-color: #34495e;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+    color: transparent; /* 通常時は文字を隠す */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.3s, background-color 0.3s;
+    user-select: none;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(0,0,0,0.2);
+}
+
+/* カードがめくられた状態 */
+.card.flipped {
+    background-color: #ecf0f1;
+    color: #2c3e50;
+    cursor: default;
+    transform: rotateY(180deg);
+}
+
+/* マッチしたカード */
+.card.matched {
+    background-color: #27ae60;
+    color: white;
+    cursor: default;
+    animation: pulse 0.5s;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+button {
+    margin-top: 30px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: #c0392b;
+}
