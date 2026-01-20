@@ -1,0 +1,22 @@
+{
+  "name": "babanuki-online-multiplayer",
+  "version": "1.0.0",
+  "description": "オンラインマルチプレイヤーババ抜きゲーム - Firestoreセキュリティルールテスト",
+  "scripts": {
+    "test": "jest firestore.rules.test.js",
+    "test:watch": "jest firestore.rules.test.js --watch",
+    "emulator": "firebase emulators:start",
+    "deploy:rules": "firebase deploy --only firestore:rules",
+    "deploy:indexes": "firebase deploy --only firestore:indexes",
+    "deploy:all": "firebase deploy"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.0",
+    "firebase": "^10.7.0",
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 30000
+  }
+}
