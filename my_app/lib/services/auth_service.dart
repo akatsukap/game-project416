@@ -1,88 +1,44 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
-/// Firebase Authenticationを使用したプレイヤー認証を管理するサービス
+/// Firebase認証サービス
+///
+/// ユーザーの匿名認証を管理するサービスクラス
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  /// 匿名認証でサインイン
+  /// 現在のユーザーを取得
+  User? get currentUser => _auth.currentUser;
+
+  /// 匿名でサインイン
   ///
-  /// Firebase匿名認証を使用してユーザーを認証します。
-  /// 成功した場合は[User]オブジェクトを返し、失敗した場合はnullを返します。
-  ///
-  /// 例外:
-  /// - [FirebaseAuthException]: 認証に失敗した場合
+  /// Returns: サインインしたユーザー、失敗時はnull
   Future<User?> signInAnonymously() async {
     try {
-      final UserCredential userCredential = await _auth.signInAnonymously();
-      return userCredential.user;
-    } on FirebaseAuthException catch (e) {
-      // エラーログを出力（本番環境では適切なロギングサービスを使用）
-      print('匿名認証エラー: ${e.code} - ${e.message}');
-
-      // より詳細なエラーメッセージを提供
-      if (e.code == 'api-key-not-valid' || e.code == 'invalid-api-key') {
-        throw Exception(
-          'Firebase APIキーが無効です。\n'
-          'FIREBASE_SETUP_INSTRUCTIONS.mdを参照して、\n'
-          'Firebaseプロジェクトを設定してください。',
-        );
-      } else if (e.code == 'network-request-failed') {
-        throw Exception(
-          'ネットワークエラーが発生しました。\n'
-          'インターネット接続を確認してください。',
-        );
-      }
-
-      rethrow;
+      final UserCredential result = await _auth.signInAnonymously();
+      return result.user;
     } catch (e) {
-      print('予期しないエラー: $e');
-      throw Exception(
-        'Firebase設定エラー: $e\n\n'
-        'Firebaseプロジェクトが正しく設定されていない可能性があります。\n'
-        'FIREBASE_SETUP_INSTRUCTIONS.mdを参照してください。',
-      );
+      throw Exception('匿名認証に失敗しました: $e');
     }
-  }
-
-  /// ニックネームを検証
-  ///
-  /// ニックネームが有効かどうかを検証します。
-  /// 有効なニックネームは3文字以上20文字以内です。
-  ///
-  /// [nickname]: 検証するニックネーム
-  ///
-  /// 戻り値: ニックネームが有効な場合はtrue、無効な場合はfalse
-  bool validateNickname(String nickname) {
-    // 空白を除去
-    final trimmedNickname = nickname.trim();
-
-    // 3文字以上20文字以内であることを確認
-    return trimmedNickname.length >= 3 && trimmedNickname.length <= 20;
-  }
-
-  /// 現在のユーザーを取得
-  ///
-  /// 現在認証されているユーザーを返します。
-  /// 認証されていない場合はnullを返します。
-  ///
-  /// 戻り値: 現在のユーザー、または認証されていない場合はnull
-  User? getCurrentUser() {
-    return _auth.currentUser;
   }
 
   /// サインアウト
-  ///
-  /// 現在のユーザーをサインアウトします。
-  ///
-  /// 例外:
-  /// - [FirebaseAuthException]: サインアウトに失敗した場合
   Future<void> signOut() async {
     try {
       await _auth.signOut();
-    } on FirebaseAuthException catch (e) {
-      // エラーログを出力
-      print('サインアウトエラー: ${e.code} - ${e.message}');
-      rethrow;
+    } catch (e) {
+      throw Exception('サインアウトに失敗しました: $e');
     }
   }
+
+  /// ニックネームのバリデーション
+  ///
+  /// [nickname] 検証するニックネーム
+  /// Returns: 有効な場合true、無効な場合false
+  bool validateNickname(String nickname) {
+    final trimmed = nickname.trim();
+    return trimmed.length >= 3 && trimmed.length <= 20;
+  }
+
+  /// 認証状態の変更を監視
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
 }

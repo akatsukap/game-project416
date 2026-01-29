@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
+import 'package:my_app/services/auth_service.dart';
 
 /// ゲームホーム画面（ニックネーム入力画面）
 ///
-/// プレイヤーがニックネームを入力してゲームに参加する画面
-/// Firebase匿名認証を使用してプレイヤーを登録し、モード選択画面に遷移する
+/// 複数のゲームを選択できる画面（将来的な拡張用）
 class GameHomeScreen extends StatefulWidget {
   const GameHomeScreen({super.key});
 
@@ -16,7 +15,6 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
   final TextEditingController _nicknameController = TextEditingController();
   final AuthService _authService = AuthService();
   bool _isLoading = false;
-  String? _errorMessage;
 
   @override
   void dispose() {
@@ -24,33 +22,24 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
     super.dispose();
   }
 
-  /// ニックネームを検証
-  String? _validateNickname(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'ニックネームを入力してください';
-    }
+  /// 開始ボタンが押されたときの処理（ババ抜き用）
+  Future<void> _onBabanukiPressed() async {
+    // ニックネーム入力ダイアログを表示
+    final nickname = await showDialog<String>(
+      context: context,
+      builder: (context) => _NicknameInputDialog(
+        controller: _nicknameController,
+        authService: _authService,
+      ),
+    );
 
-    if (!_authService.validateNickname(value)) {
-      return 'ニックネームは3文字以上20文字以内で入力してください';
-    }
-
-    return null;
-  }
-
-  /// 開始ボタンが押されたときの処理
-  Future<void> _onStartPressed() async {
-    // 入力検証
-    final validationError = _validateNickname(_nicknameController.text);
-    if (validationError != null) {
-      setState(() {
-        _errorMessage = validationError;
-      });
+    // キャンセルされた場合は何もしない
+    if (nickname == null) {
       return;
     }
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
     });
 
     try {
@@ -58,8 +47,22 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
       final user = await _authService.signInAnonymously();
 
       if (user == null) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('エラー'),
+              content: const Text('認証に失敗しました。もう一度お試しください。'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('閉じる'),
+                ),
+              ],
+            ),
+          );
+        }
         setState(() {
-          _errorMessage = '認証に失敗しました。もう一度お試しください。';
           _isLoading = false;
         });
         return;
@@ -67,10 +70,10 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
 
       // 認証成功後、モード選択画面に遷移
       if (mounted) {
-        Navigator.pushReplacementNamed(
+        Navigator.pushNamed(
           context,
           '/babanuki-mode-selection',
-          arguments: _nicknameController.text.trim(),
+          arguments: nickname,
         );
       }
     } catch (e) {
@@ -81,7 +84,6 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
       }
 
       setState(() {
-        _errorMessage = errorMsg;
         _isLoading = false;
       });
 
@@ -102,6 +104,12 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
             ],
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -188,7 +196,7 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
                       children: [
                         // 説明テキスト
                         Text(
-                          'ニックネームを入力してください',
+                          'ゲームを選択してください',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -196,54 +204,10 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '3文字以上20文字以内',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
                         const SizedBox(height: 24),
-                        // ニックネーム入力フィールド
-                        TextField(
-                          controller: _nicknameController,
-                          decoration: InputDecoration(
-                            labelText: 'ニックネーム',
-                            hintText: '例: プレイヤー1',
-                            prefixIcon: Icon(
-                              Icons.person,
-                              color: Colors.purple.shade700,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: Colors.purple.shade700,
-                                width: 2,
-                              ),
-                            ),
-                            errorText: _errorMessage,
-                          ),
-                          maxLength: 20,
-                          enabled: !_isLoading,
-                          onChanged: (value) {
-                            // 入力中はエラーメッセージをクリア
-                            if (_errorMessage != null) {
-                              setState(() {
-                                _errorMessage = null;
-                              });
-                            }
-                          },
-                          onSubmitted: (_) => _onStartPressed(),
-                        ),
-                        const SizedBox(height: 24),
-                        // 開始ボタン
+                        // ババ抜きボタン
                         ElevatedButton(
-                          onPressed: _isLoading ? null : _onStartPressed,
+                          onPressed: _isLoading ? null : _onBabanukiPressed,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.purple.shade700,
                             foregroundColor: Colors.white,
@@ -252,6 +216,61 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             elevation: 4,
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.style),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'ババ抜き',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                        const SizedBox(height: 16),
+                        // ヘッドボールボタン
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushNamed(context, '/head-ball-menu');
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green.shade700,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 4,
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.sports_soccer),
+                              SizedBox(width: 8),
+                              Text(
+                                'ヘッドボール',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
                           child: _isLoading
                               ? const SizedBox(
@@ -288,6 +307,80 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// ニックネーム入力ダイアログ
+class _NicknameInputDialog extends StatefulWidget {
+  final TextEditingController controller;
+  final AuthService authService;
+
+  const _NicknameInputDialog({
+    required this.controller,
+    required this.authService,
+  });
+
+  @override
+  State<_NicknameInputDialog> createState() => _NicknameInputDialogState();
+}
+
+class _NicknameInputDialogState extends State<_NicknameInputDialog> {
+  String? _errorMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('ニックネーム入力'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('3文字以上20文字以内で入力してください'),
+          const SizedBox(height: 16),
+          TextField(
+            controller: widget.controller,
+            decoration: InputDecoration(
+              labelText: 'ニックネーム',
+              hintText: '例: プレイヤー1',
+              errorText: _errorMessage,
+              border: const OutlineInputBorder(),
+            ),
+            maxLength: 20,
+            onChanged: (value) {
+              if (_errorMessage != null) {
+                setState(() {
+                  _errorMessage = null;
+                });
+              }
+            },
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('キャンセル'),
+        ),
+        TextButton(
+          onPressed: () {
+            final nickname = widget.controller.text.trim();
+            if (nickname.isEmpty) {
+              setState(() {
+                _errorMessage = 'ニックネームを入力してください';
+              });
+              return;
+            }
+            if (!widget.authService.validateNickname(nickname)) {
+              setState(() {
+                _errorMessage = 'ニックネームは3文字以上20文字以内で入力してください';
+              });
+              return;
+            }
+            Navigator.of(context).pop(nickname);
+          },
+          child: const Text('OK'),
+        ),
+      ],
     );
   }
 }
