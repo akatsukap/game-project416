@@ -1,1 +1,18 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"game-project-416","appId":"1:128239747293:android:484260e83f5ac0025b5b34","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"game-project-416","configurations":{"android":"1:128239747293:android:484260e83f5ac0025b5b34","ios":"1:128239747293:ios:eef05b42199cb5a25b5b34","macos":"1:128239747293:ios:eef05b42199cb5a25b5b34","web":"1:128239747293:web:74502f508cb805395b5b34","windows":"1:128239747293:web:b28e231fe4f9fce15b5b34"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "emulators": {
+    "auth": {
+      "port": 9099
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    }
+  }
+}
