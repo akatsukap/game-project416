@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -9,7 +10,9 @@ import 'screens/game_home_screen.dart';
 import 'screens/game_screen.dart';
 import 'screens/mode_selection_screen.dart';
 import 'screens/multiplayer_game_screen.dart';
+import 'screens/multiplayer_lobby_screen.dart';
 import 'screens/multiplayer_result_screen.dart';
+import 'screens/multiplayer_waiting_screen.dart';
 import 'screens/player_selection_screen.dart';
 import 'screens/result_screen.dart';
 import 'screens/start_screen.dart';
@@ -73,23 +76,41 @@ class MyApp extends StatelessWidget {
       },
       // 引数を受け取るルート
       onGenerateRoute: (settings) {
+        // ローカルゲームの結果画面
         if (settings.name == '/result') {
           final winner = settings.arguments as String;
           return MaterialPageRoute(
             builder: (context) => ResultScreen(winner: winner),
           );
-        } else if (settings.name == '/multiplayer-game') {
-          final playerCount = settings.arguments as int;
+        }
+        // オンラインマルチプレイヤーロビー画面
+        else if (settings.name == '/multiplayer_lobby') {
+          final nickname = settings.arguments as String;
           return MaterialPageRoute(
-            builder: (context) =>
-                MultiplayerGameScreen(playerCount: playerCount),
+            builder: (context) => MultiplayerLobbyScreen(nickname: nickname),
           );
-        } else if (settings.name == '/multiplayer-result') {
+        }
+        // オンラインマルチプレイヤー待機画面
+        else if (settings.name == '/multiplayer_waiting') {
+          final roomCode = settings.arguments as String;
+          return MaterialPageRoute(
+            builder: (context) => MultiplayerWaitingScreen(roomCode: roomCode),
+          );
+        }
+        // オンラインマルチプレイヤーゲーム画面
+        else if (settings.name == '/multiplayer_game') {
+          final roomCode = settings.arguments as String;
+          return MaterialPageRoute(
+            builder: (context) => MultiplayerGameScreen(roomCode: roomCode),
+          );
+        }
+        // オンラインマルチプレイヤー結果画面
+        else if (settings.name == '/multiplayer_result') {
           final args = settings.arguments as Map<String, dynamic>;
           return MaterialPageRoute(
             builder: (context) => MultiplayerResultScreen(
-              loser: args['loser'] as int,
-              playerCount: args['playerCount'] as int,
+              roomCode: args['roomCode'] as String,
+              loserId: args['loserId'] as String,
             ),
           );
         }

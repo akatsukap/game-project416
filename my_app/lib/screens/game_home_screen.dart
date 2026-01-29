@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/services/auth_service.dart';
 
-/// ゲームホーム画面
+/// ゲームホーム画面（ニックネーム入力画面）
 ///
 /// 複数のゲームを選択できる画面（将来的な拡張用）
 class GameHomeScreen extends StatefulWidget {
@@ -272,6 +272,31 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
                               ),
                             ],
                           ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      '開始',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Icon(Icons.arrow_forward),
+                                  ],
+                                ),
                         ),
                       ],
                     ),

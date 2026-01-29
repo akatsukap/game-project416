@@ -141,3 +141,43 @@ vite.config.ts.timestamp-*
 .kiro/specs/babanuki-game/requirements.md
 .kiro/steering/japanese-response.md
 .kiro/specs/babanuki-game/tasks.md
+
+# ----------------------------------------------------------------------------
+# Flutter / Dart Specific
+# ----------------------------------------------------------------------------
+# Flutter がビルド時に生成する一時ディレクトリ
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+
+# ビルド成果物（コンテナ内で生成されるため Git 管理不要）
+build/
+
+# ----------------------------------------------------------------------------
+# Firebase / Google Specific (Important!)
+# ----------------------------------------------------------------------------
+# 【推奨】FlutterFire CLI が自動生成する接続定義ファイル
+# チーム開発では各自が flutterfire configure を叩く運用がクリーンです
+**/lib/firebase_options.dart
+
+# ネイティブ側の設定ファイル（Flutter 3.x 以降は firebase_options.dart があれば不要）
+**/android/app/google-services.json
+**/ios/Runner/GoogleService-Info.plist
+**/ios/firebase_app_id_file.json
+**/macos/Runner/GoogleService-Info.plist
+**/macos/firebase_app_id_file.json
+
+# ----------------------------------------------------------------------------
+# Project Specific Cleanup
+# ----------------------------------------------------------------------------
+# 重複して配置されている可能性がある設定ファイル（ルートのものを正とする場合）
+my_app/firebase.json
+
+# ----------------------------------------------------------------------------
+# OS Specific
+# ----------------------------------------------------------------------------
+.DS_Store
+Thumbs.db

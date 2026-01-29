@@ -1,0 +1,10 @@
+version: '3.3'  # バージョンを明示的に指定
+services:
+  app:
+    build: .
+    volumes:
+      - .:/app
+    tty: true
+    stdin_open: true
+    ports:
+      - "8081:8081"  # 左がWindows側、右がコンテナ側のポート番号
