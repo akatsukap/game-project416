@@ -29,6 +29,49 @@
 ## 📜 ライセンス
 [MIT License](LICENSE)
 
+初回セットアップ
+
+wsl --update（Windowsのみ）
+
+git clone → cd game-project416
+
+docker compose up -d --build
+
+docker compose exec app bash
+
+firebase login --no-localhost
+
+cd my_app && flutterfire configure
+
+毎日の開発ループ（動作確認込み）
+
+git pull origin main
+
+docker compose up -d
+
+docker compose exec app bash
+
+firebase emulators:start --only firestore,auth,functions（必要な場合）
+
+Flutter起動（ホスト推奨）
+cd my_app && flutter run -d chrome
+
+変更した層に応じてテスト実行
+
+ルール変更：npm test（ルート）
+
+Flutter変更：flutter test / flutter analyze（my_app）
+
+Functions変更：npm test（functions）
+
+PR前のチェック（最低限）
+
+docker compose ps で環境が再現できる
+
+Emulator + Flutter で主要画面（ロビー/マッチング/ゲーム開始）まで動く
+
+変更した領域のテストが通る
+
 ## 💻 ローカル環境構築（Flutter / Dart・詳細版）
 
 このプロジェクトは Flutter（Web） を使ってローカル環境で動作確認できます。
