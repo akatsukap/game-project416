@@ -181,3 +181,8 @@ my_app/firebase.json
 # ----------------------------------------------------------------------------
 .DS_Store
 Thumbs.db
+
+# --- Flutter generated plugin registrants (avoid noisy diffs) ---
+my_app/macos/Flutter/GeneratedPluginRegistrant.swift
+my_app/windows/flutter/generated_plugin_registrant.cc
+my_app/windows/flutter/generated_plugins.cmake
