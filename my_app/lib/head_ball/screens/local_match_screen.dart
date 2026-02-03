@@ -113,42 +113,53 @@ class _LocalMatchScreenState extends State<LocalMatchScreen> {
 
   /// ゲームを初期化
   Future<void> _initializeGame() async {
-    // ゲームリポジトリを初期化
-    _repository = await GameRepository.create();
+    try {
+      // ゲームリポジトリを初期化
+      _repository = await GameRepository.create();
 
-    // プレイヤーキャラクターを初期化
-    await _game.initializePlayers(
-      character1Data: _player1Character!,
-      character2Data: _player2Character!,
-    );
+      // プレイヤーキャラクターを初期化
+      await _game.initializePlayers(
+        character1Data: _player1Character!,
+        character2Data: _player2Character!,
+      );
 
-    // 入力コントローラーを作成
-    _player1Controller = InputController(
-      playerNumber: 1,
-      player: _game.player1!,
-    );
-    _player2Controller = InputController(
-      playerNumber: 2,
-      player: _game.player2!,
-    );
+      // 入力コントローラーを作成
+      _player1Controller = InputController(
+        playerNumber: 1,
+        player: _game.player1!,
+      );
+      _player2Controller = InputController(
+        playerNumber: 2,
+        player: _game.player2!,
+      );
 
-    // ゲームに入力コントローラーを追加
-    await _game.world.add(_player1Controller!);
-    await _game.world.add(_player2Controller!);
+      // ゲームに入力コントローラーを追加
+      await _game.world.add(_player1Controller!);
+      await _game.world.add(_player2Controller!);
 
-    // プレイヤーが完全にマウントされるまで少し待機
-    // これにより、物理ボディが確実に初期化される
-    await Future.delayed(const Duration(milliseconds: 100));
+      // プレイヤーが完全にマウントされるまで少し待機
+      // これにより、物理ボディが確実に初期化される
+      await Future.delayed(const Duration(milliseconds: 100));
 
-    // 試合を開始
-    _game.startMatch();
+      // 試合を開始
+      _game.startMatch();
 
-    setState(() {
-      _isCharacterSelectionComplete = true;
-    });
+      setState(() {
+        _isCharacterSelectionComplete = true;
+      });
 
-    // ゲーム終了を監視
-    _monitorGameEnd();
+      // ゲーム終了を監視
+      _monitorGameEnd();
+    } catch (e) {
+      debugPrint('ゲームの初期化に失敗しました: $e');
+      // エラーが発生した場合はメニューに戻る
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('ゲームの初期化に失敗しました')));
+      }
+    }
   }
 
   /// ゲーム終了を監視
@@ -192,16 +203,24 @@ class _LocalMatchScreenState extends State<LocalMatchScreen> {
 
     // 結果画面に遷移
     if (mounted) {
-      await Navigator.push(
+      final result = await Navigator.push<String>(
         context,
         MaterialPageRoute(
           builder: (context) => MatchResultScreen(matchResult: matchResult),
         ),
       );
 
-      // 結果画面から戻ったらメニューに戻る
+      // 結果画面から戻った場合の処理
       if (mounted) {
-        Navigator.pop(context);
+        if (result == 'replay') {
+          // 再試合の場合は、ゲームをリセットして再開
+          _game.resumeEngine(); // エンジンを再開
+          _game.startMatch(); // 試合を開始
+          _monitorGameEnd(); // ゲーム終了を再監視
+        } else {
+          // メニューに戻る
+          Navigator.pop(context);
+        }
       }
     }
   }
@@ -319,7 +338,10 @@ class _LocalMatchScreenState extends State<LocalMatchScreen> {
 
   @override
   void dispose() {
-    _game.pauseEngine();
+    // ゲームエンジンが実行中の場合のみ一時停止
+    if (_game.state == GameState.playing) {
+      _game.pauseEngine();
+    }
     super.dispose();
   }
 }

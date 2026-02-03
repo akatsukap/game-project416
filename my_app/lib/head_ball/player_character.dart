@@ -122,6 +122,7 @@ class PlayerCharacter extends BodyComponent
       'student': Color(0xFF2ECC71), // 緑
       'firefighter': Color(0xFFE67E22), // オレンジ
       'security_guard': Color(0xFF9B59B6), // 紫
+      'local_ace': Color(0xFFF39C12), // 金色（エースらしい色）
     };
     return colorMap[characterId] ?? const Color(0xFF95A5A6);
   }

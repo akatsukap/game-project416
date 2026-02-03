@@ -65,7 +65,7 @@ class GameWorld extends Component with HasGameReference<Forge2DGame> {
 
       // フィールド背景のスプライトを読み込む
       _fieldSprite = await SpriteLoader.loadSpriteWithFallback(
-        'assets/game/field_background.png',
+        'game/field_background.png',
       );
 
       // 背景コンポーネントを作成して追加

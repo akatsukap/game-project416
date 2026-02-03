@@ -1,7 +1,10 @@
 import 'package:firebase_core/firebase_core.dart';
+<<<<<<< Updated upstream
+=======
+import 'package:flutter/foundation.dart';
+>>>>>>> Stashed changes
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_core/firebase_core.dart';
 
 import 'firebase_options.dart';
 import 'head_ball/screens/head_ball_menu_screen.dart';
@@ -16,6 +19,7 @@ import 'screens/multiplayer_waiting_screen.dart';
 import 'screens/player_selection_screen.dart';
 import 'screens/result_screen.dart';
 import 'screens/start_screen.dart';
+import 'utils/asset_validator.dart';
 
 void main() async {
   // Flutterバインディングの初期化
@@ -47,6 +51,11 @@ void main() async {
     debugPrint('2. `flutterfire configure`コマンドを実行');
     debugPrint('3. または、FIREBASE_SETUP_INSTRUCTIONS.mdを参照');
     debugPrint('=============================');
+  }
+
+  // アセット検証を実行（開発モードのみ）
+  if (kDebugMode) {
+    await AssetValidator.validateRequiredAssets();
   }
 
   runApp(const MyApp());

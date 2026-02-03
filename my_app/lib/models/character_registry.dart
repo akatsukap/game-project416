@@ -10,7 +10,7 @@ class CharacterRegistry {
     const CharacterData(
       id: 'local_hero_1',
       name: '地元のヒーロー',
-      spritePath: 'assets/characters/hero1.png',
+      spritePath: 'characters/hero1.png',
       speed: 100.0,
       jumpPower: 300.0,
       kickPower: 500.0,
@@ -22,7 +22,7 @@ class CharacterRegistry {
     const CharacterData(
       id: 'shop_owner',
       name: '商店のおやじ',
-      spritePath: 'assets/characters/shop_owner.png',
+      spritePath: 'characters/shop_owner.png',
       speed: 80.0,
       jumpPower: 250.0,
       kickPower: 700.0,
@@ -34,7 +34,7 @@ class CharacterRegistry {
     const CharacterData(
       id: 'student',
       name: '地元の学生',
-      spritePath: 'assets/characters/student.png',
+      spritePath: 'characters/student.png',
       speed: 120.0,
       jumpPower: 280.0,
       kickPower: 450.0,
@@ -46,7 +46,7 @@ class CharacterRegistry {
     const CharacterData(
       id: 'firefighter',
       name: '地元の消防士',
-      spritePath: 'assets/characters/firefighter.png',
+      spritePath: 'characters/firefighter.png',
       speed: 90.0,
       jumpPower: 400.0,
       kickPower: 550.0,
@@ -58,12 +58,24 @@ class CharacterRegistry {
     const CharacterData(
       id: 'security_guard',
       name: '地元の警備員',
-      spritePath: 'assets/characters/security_guard.png',
+      spritePath: 'characters/security_guard.png',
       speed: 85.0,
       jumpPower: 270.0,
       kickPower: 480.0,
       specialAbilityType: SpecialAbilityType.shield,
       description: '堅実な守りが得意。シールドでボールの影響を無効化できます。',
+    ),
+
+    // キャラクター6: オールラウンダーのエース
+    const CharacterData(
+      id: 'local_ace',
+      name: '地元のエース',
+      spritePath: 'characters/local_ace.png',
+      speed: 110.0,
+      jumpPower: 320.0,
+      kickPower: 600.0,
+      specialAbilityType: SpecialAbilityType.powerKick,
+      description: '地元で一番の実力者。全ての能力が高く、強力なパワーキックで試合を決める。',
     ),
   ];
 

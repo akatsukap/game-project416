@@ -48,54 +48,132 @@ class _CharacterSelectScreenState extends State<CharacterSelectScreen> {
           ),
         ),
         child: SafeArea(
-          child: Row(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // 画面サイズに応じてレイアウトを切り替え
+              // 幅が600px未満の場合はコンパクトレイアウト（縦向き）
+              // 600px以上の場合はワイドレイアウト（横向き）
+              if (constraints.maxWidth < 600) {
+                return _buildCompactLayout(characters, playerColor);
+              } else {
+                return _buildWideLayout(characters, playerColor);
+              }
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// ワイドレイアウト（横向き・大画面用）
+  Widget _buildWideLayout(
+    List<CharacterData> characters,
+    MaterialColor playerColor,
+  ) {
+    return Row(
+      children: [
+        // 左側：ヘッダーとキャラクター詳細
+        Expanded(
+          flex: 2,
+          child: Column(
             children: [
-              // 左側：ヘッダーとキャラクター詳細
+              // ヘッダー
+              _buildHeader(playerColor),
+              const SizedBox(height: 16),
+              // 選択中のキャラクター詳細
               Expanded(
-                flex: 2,
-                child: Column(
-                  children: [
-                    // ヘッダー
-                    _buildHeader(playerColor),
-                    const SizedBox(height: 16),
-                    // 選択中のキャラクター詳細
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: _buildCharacterDetails(playerColor),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // 決定ボタン
-                    _buildConfirmButton(playerColor),
-                    const SizedBox(height: 20),
-                  ],
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _buildCharacterDetails(playerColor),
                 ),
               ),
-              // 右側：キャラクター一覧
-              Expanded(
-                flex: 3,
-                child: Column(
-                  children: [
-                    const SizedBox(height: 20),
-                    Text(
-                      'キャラクターを選択',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: playerColor[700],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Expanded(child: _buildCharacterGrid(characters)),
-                    const SizedBox(height: 20),
-                  ],
+              const SizedBox(height: 16),
+              // 決定ボタン
+              _buildConfirmButton(playerColor),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+        // 右側：キャラクター一覧
+        Expanded(
+          flex: 3,
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'キャラクターを選択',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: playerColor[700],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: _buildCharacterGrid(characters, crossAxisCount: 3),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// コンパクトレイアウト（縦向き・小画面用）
+  Widget _buildCompactLayout(
+    List<CharacterData> characters,
+    MaterialColor playerColor,
+  ) {
+    return Column(
+      children: [
+        // ヘッダー
+        _buildHeader(playerColor),
+        const SizedBox(height: 12),
+        // キャラクター一覧（グリッド）
+        Expanded(
+          flex: 3,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'キャラクターを選択',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: playerColor[700],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: _buildCharacterGrid(characters, crossAxisCount: 2),
               ),
             ],
           ),
         ),
-      ),
+        const SizedBox(height: 12),
+        // 選択中のキャラクター詳細（コンパクト版）
+        Flexible(
+          flex: 2,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildCharacterDetails(playerColor),
+          ),
+        ),
+        const SizedBox(height: 12),
+        // 決定ボタン
+        _buildConfirmButton(playerColor),
+        const SizedBox(height: 16),
+      ],
     );
   }
 
@@ -112,13 +190,17 @@ class _CharacterSelectScreenState extends State<CharacterSelectScreen> {
             color: playerColor[700],
             onPressed: () => Navigator.pop(context),
           ),
-          // タイトル
-          Text(
-            'プレイヤー${widget.playerNumber}',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: playerColor[700],
+          // タイトル（Flexibleでラップしてオーバーフロー防止）
+          Flexible(
+            child: Text(
+              'プレイヤー${widget.playerNumber}',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: playerColor[700],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(width: 48), // バランス調整用
@@ -127,12 +209,15 @@ class _CharacterSelectScreenState extends State<CharacterSelectScreen> {
     );
   }
 
-  /// キャラクター一覧をグリッド表示で構築（横向き用）
-  Widget _buildCharacterGrid(List<CharacterData> characters) {
+  /// キャラクター一覧をグリッド表示で構築
+  Widget _buildCharacterGrid(
+    List<CharacterData> characters, {
+    required int crossAxisCount,
+  }) {
     return GridView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3, // 3列表示
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount, // 画面サイズに応じて列数を変更
         childAspectRatio: 0.8,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
@@ -175,19 +260,21 @@ class _CharacterSelectScreenState extends State<CharacterSelectScreen> {
                   color: Colors.grey.shade600,
                 ),
                 const SizedBox(height: 8),
-                // キャラクター名
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Text(
-                    character.name,
-                    style: TextStyle(
-                      fontSize: isSelected ? 14 : 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                // キャラクター名（Flexibleでラップしてオーバーフロー防止）
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      character.name,
+                      style: TextStyle(
+                        fontSize: isSelected ? 14 : 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -200,94 +287,6 @@ class _CharacterSelectScreenState extends State<CharacterSelectScreen> {
                   )
                 else
                   const SizedBox(height: 24),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  /// キャラクター一覧を構築
-  Widget _buildCharacterList(List<CharacterData> characters) {
-    return ListView.builder(
-      scrollDirection: Axis.horizontal,
-      itemCount: characters.length,
-      itemBuilder: (context, index) {
-        final character = characters[index];
-        final isSelected = index == _selectedIndex;
-
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              _selectedIndex = index;
-            });
-          },
-          child: Container(
-            width: 150,
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // キャラクターカード
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: isSelected ? 140 : 120,
-                  height: isSelected ? 140 : 120,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSelected ? Colors.yellow : Colors.grey.shade300,
-                      width: isSelected ? 4 : 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: isSelected ? 12 : 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // キャラクターアイコン（仮）
-                        Icon(
-                          Icons.person,
-                          size: isSelected ? 60 : 50,
-                          color: Colors.grey.shade600,
-                        ),
-                        const SizedBox(height: 8),
-                        // キャラクター名
-                        Flexible(
-                          child: Text(
-                            character.name,
-                            style: TextStyle(
-                              fontSize: isSelected ? 14 : 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // 選択インジケーター
-                if (isSelected)
-                  Icon(
-                    Icons.check_circle,
-                    color: Colors.yellow.shade700,
-                    size: 32,
-                  ),
               ],
             ),
           ),
@@ -323,13 +322,15 @@ class _CharacterSelectScreenState extends State<CharacterSelectScreen> {
               fontWeight: FontWeight.bold,
               color: playerColor[700],
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 6),
           // 説明
           Text(
             _selectedCharacter.description,
             style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-            maxLines: 2,
+            maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 12),
@@ -368,6 +369,8 @@ class _CharacterSelectScreenState extends State<CharacterSelectScreen> {
                     fontWeight: FontWeight.bold,
                     color: Colors.purple.shade700,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -388,9 +391,9 @@ class _CharacterSelectScreenState extends State<CharacterSelectScreen> {
 
     return Row(
       children: [
-        // ラベル
-        SizedBox(
-          width: 80,
+        // ラベル（Flexibleでラップしてオーバーフロー防止）
+        Flexible(
+          flex: 2,
           child: Text(
             label,
             style: const TextStyle(
@@ -398,10 +401,14 @@ class _CharacterSelectScreenState extends State<CharacterSelectScreen> {
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
+        const SizedBox(width: 8),
         // バー
         Expanded(
+          flex: 5,
           child: Stack(
             children: [
               // 背景
@@ -438,6 +445,8 @@ class _CharacterSelectScreenState extends State<CharacterSelectScreen> {
               color: Colors.black87,
             ),
             textAlign: TextAlign.right,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
