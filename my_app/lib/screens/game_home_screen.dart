@@ -114,6 +114,26 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
     }
   }
 
+  /// ヘッドボール開始（ローディング表示の統一用）
+  Future<void> _onHeadBallPressed() async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      if (!mounted) return;
+      Navigator.pushNamed(context, '/head-ball-menu');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -205,6 +225,7 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 24),
+
                         // ババ抜きボタン
                         ElevatedButton(
                           onPressed: _isLoading ? null : _onBabanukiPressed,
@@ -244,11 +265,10 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
                                 ),
                         ),
                         const SizedBox(height: 16),
-                        // ヘッドボールボタン
+
+                        // ヘッドボールボタン（child 重複を解消）
                         ElevatedButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/head-ball-menu');
-                          },
+                          onPressed: _isLoading ? null : _onHeadBallPressed,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green.shade700,
                             foregroundColor: Colors.white,
@@ -257,20 +277,6 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             elevation: 4,
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.sports_soccer),
-                              SizedBox(width: 8),
-                              Text(
-                                'ヘッドボール',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
                           ),
                           child: _isLoading
                               ? const SizedBox(
@@ -286,15 +292,15 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
                               : const Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
+                                    Icon(Icons.sports_soccer),
+                                    SizedBox(width: 8),
                                     Text(
-                                      '開始',
+                                      'ヘッドボール',
                                       style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    SizedBox(width: 8),
-                                    Icon(Icons.arrow_forward),
                                   ],
                                 ),
                         ),
