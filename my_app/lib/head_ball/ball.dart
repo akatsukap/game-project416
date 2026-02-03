@@ -35,7 +35,7 @@ class Ball extends BodyComponent with ContactCallbacks {
     await super.onLoad();
 
     // ボールのスプライトを読み込む
-    _sprite = await SpriteLoader.loadSpriteWithFallback('assets/game/ball.png');
+    _sprite = await SpriteLoader.loadSpriteWithFallback('game/ball.png');
   }
 
   @override

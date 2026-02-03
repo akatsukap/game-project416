@@ -123,9 +123,8 @@ class MatchResultScreen extends StatelessWidget {
                               color: Colors.white.withValues(alpha: 0.9),
                               textColor: resultColor.shade700,
                               onPressed: () {
-                                Navigator.of(
-                                  context,
-                                ).popUntil((route) => route.isFirst);
+                                // nullを返してメニューに戻る
+                                Navigator.of(context).pop();
                               },
                             ),
                           ),
@@ -139,8 +138,8 @@ class MatchResultScreen extends StatelessWidget {
                               color: Colors.white,
                               textColor: resultColor.shade700,
                               onPressed: () {
-                                // キャラクター選択画面に戻る
-                                Navigator.of(context).pop();
+                                // 'replay'を返してキャラクター選択画面に戻る
+                                Navigator.of(context).pop('replay');
                               },
                             ),
                           ),

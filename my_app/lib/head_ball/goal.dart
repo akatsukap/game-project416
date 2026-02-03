@@ -47,7 +47,7 @@ class Goal extends BodyComponent with ContactCallbacks {
     await super.onLoad();
 
     // ゴールのスプライトを読み込む
-    _sprite = await SpriteLoader.loadSpriteWithFallback('assets/game/goal.png');
+    _sprite = await SpriteLoader.loadSpriteWithFallback('game/goal.png');
   }
 
   @override

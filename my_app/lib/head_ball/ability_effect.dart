@@ -1,5 +1,6 @@
 import 'dart:math' as dart_math;
 import 'dart:ui' show Canvas, Offset, Paint, PaintingStyle;
+
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart' show Color;
 
@@ -53,7 +54,7 @@ class AbilityEffect extends PositionComponent {
 
     // エフェクトのスプライトを読み込む
     _sprite = await SpriteLoader.loadSpriteWithFallback(
-      'assets/effects/$effectType.png',
+      'effects/$effectType.png',
     );
   }
 

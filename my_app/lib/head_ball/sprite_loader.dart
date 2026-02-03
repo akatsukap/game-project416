@@ -1,6 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart' show Color;
 
+import '../utils/asset_path_manager.dart';
 import 'placeholder_sprite.dart';
 
 /// スプライト読み込みユーティリティ
@@ -42,10 +43,15 @@ class SpriteLoader {
     Future<Sprite> Function()? fallbackGenerator,
   }) async {
     try {
-      return await Sprite.load(path);
+      // パスを正規化（Flame用）
+      final normalizedPath = AssetPathManager.normalizeFlameAssetPath(path);
+      return await Sprite.load(normalizedPath);
     } catch (e) {
-      // スプライト読み込みエラーをログに記録
-      print('スプライトの読み込みに失敗しました: $path, エラー: $e');
+      // スプライト読み込みエラーをログに記録（詳細なパス情報を含む）
+      print('スプライトの読み込みに失敗しました');
+      print('  元のパス: $path');
+      print('  正規化されたパス: ${AssetPathManager.normalizeFlameAssetPath(path)}');
+      print('  エラー: $e');
       print('プレースホルダースプライトを生成します');
 
       try {

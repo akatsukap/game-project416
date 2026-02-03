@@ -49,6 +49,10 @@ class HeadBallGame extends Forge2DGame with HasCollisionDetection {
   HeadBallGame() : super(gravity: Vector2(0, 9.8)) {
     // デバッグモードを有効にして物理ボディを表示
     debugMode = true;
+
+    // Flameの画像ベースパスを設定
+    // デフォルトの 'assets/images/' から 'assets/' に変更
+    images.prefix = 'assets/';
   }
 
   @override

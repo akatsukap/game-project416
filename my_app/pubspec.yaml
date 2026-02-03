@@ -89,9 +89,9 @@ flutter:
   assets:
     # キャラクタースプライト
     - assets/characters/
-    # ゲームアセット（ボール、フィールド、ゴール）
+    # ゲームアセット(ボール、フィールド、ゴール)
     - assets/game/
-    # エフェクトアセット（特殊能力、パーティクル）
+    # エフェクトアセット(特殊能力、パーティクル)
     - assets/effects/
 
   # An image asset can refer to one or more resolution-specific "variants", see
