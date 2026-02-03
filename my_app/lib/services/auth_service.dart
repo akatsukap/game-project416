@@ -4,6 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 ///
 /// ユーザーの匿名認証を管理するサービスクラス
 class AuthService {
+  User? getCurrentUser() {
+    return FirebaseAuth.instance.currentUser;
+  }
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   /// 現在のユーザーを取得
@@ -42,3 +46,4 @@ class AuthService {
   /// 認証状態の変更を監視
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 }
+
