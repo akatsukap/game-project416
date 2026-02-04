@@ -16,6 +16,8 @@ import 'screens/multiplayer_waiting_screen.dart';
 import 'screens/player_selection_screen.dart';
 import 'screens/result_screen.dart';
 import 'screens/start_screen.dart';
+import 'screens/horse_race_screen.dart';
+
 
 void main() async {
   // Flutterバインディングの初期化
@@ -73,6 +75,7 @@ class MyApp extends StatelessWidget {
         '/player-selection': (context) => const PlayerSelectionScreen(),
         '/head-ball-menu': (context) => const HeadBallMenuScreen(),
         '/head-ball-local-match': (context) => const LocalMatchScreen(),
+        '/horse-race': (context) => const HorseRaceScreen(),
       },
       // 引数を受け取るルート
       onGenerateRoute: (settings) {
