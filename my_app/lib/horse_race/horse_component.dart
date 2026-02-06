@@ -1,42 +1,88 @@
 import 'package:flame/components.dart';
+import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
-import 'sample_config.dart';
+import 'models.dart';
+import 'frame_color.dart';
 
-class HorseComponent extends PositionComponent {
-  HorseComponent({required this.spec});
+class HorseComponent extends PositionComponent with DragCallbacks {
+  HorseComponent({
+    required this.spec,
+    required this.onDraggedEnd,
+    this.radius = 18,
+  });
 
   final HorseSpec spec;
+  final void Function(String horseId, Vector2 worldPos) onDraggedEnd;
 
-  /// 周回位置（0..1）
+  final double radius;
+
+  // 再生用（directorが使う）
   double s = 0.0;
-
-  /// レーンオフセット（-1..+1）
   double lane = 0.0;
-
-  /// 目標（director が更新）
   double targetS = 0.0;
   double targetLane = 0.0;
-
-  /// 向き（ラジアン）
   double headingRad = 0.0;
 
-  final Paint _paint = Paint()..color = const Color(0xFFE53935);
+  // 編集用（ドラッグ中の見た目）
+  bool _dragging = false;
 
   @override
-  void onLoad() {
-    super.onLoad();
-    size = Vector2.all(18); // 馬の見た目（丸）
+  Future<void> onLoad() async {
+    await super.onLoad();
+    size = Vector2.all(radius * 2);
     anchor = Anchor.center;
+    priority = 10; // トラックより手前
+  }
+
+  @override
+  bool onDragStart(DragStartEvent event) {
+    _dragging = true;
+    return true;
+  }
+
+  @override
+  bool onDragUpdate(DragUpdateEvent event) {
+    position += event.localDelta; // そのまま追従（気持ちいい）
+    return true;
+  }
+
+  @override
+  bool onDragEnd(DragEndEvent event) {
+    _dragging = false;
+    onDraggedEnd(spec.id, position.clone());
+    return true;
+  }
+
+  @override
+  bool onDragCancel(DragCancelEvent event) {
+    _dragging = false;
+    onDraggedEnd(spec.id, position.clone());
+    return true;
   }
 
   @override
   void render(Canvas canvas) {
     super.render(canvas);
 
-    // body（丸）
-    canvas.drawCircle(Offset(size.x / 2, size.y / 2), size.x / 2, _paint);
+    final framePaint = Paint()..color = FrameColor.byFrame(spec.frame.number);
 
-    // name（簡易）
+    // body
+    canvas.drawCircle(
+      Offset(size.x / 2, size.y / 2),
+      size.x / 2,
+      framePaint,
+    );
+
+    // drag outline（指で掴んでる感）
+    if (_dragging) {
+      final o = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = Colors.white.withOpacity(0.9);
+      canvas.drawCircle(Offset(size.x / 2, size.y / 2), size.x / 2 - 1, o);
+    }
+
+    // number（馬番の代わりに とりあえず枠番号でもOK。horseNoを後で追加するなら差し替え）
     final tp = TextPainter(
       text: TextSpan(
         text: spec.frame.number.toString(),

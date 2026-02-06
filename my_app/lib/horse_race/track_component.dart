@@ -1,38 +1,8 @@
 import 'dart:math' as math;
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import 'models.dart';
 
-/// レース区間（セグメント）
-class RaceSegment {
-  final String id;
-  final String name;
-  final double timeEnd; // 0.0..1.0
-  final double tighten; // 馬群の“収束しやすさ”
-
-  const RaceSegment({
-    required this.id,
-    required this.name,
-    required this.timeEnd,
-    this.tighten = 2.0,
-  });
-}
-
-/// 競馬場（コース）設定
-class RaceCourse {
-  final String id;
-  final String name;
-  final List<RaceSegment> segments;
-
-  /// 例: (1.6, 1.0) なら横長
-  final Vector2 ovalScale;
-
-  RaceCourse({
-    required this.id,
-    required this.name,
-    required this.segments,
-    Vector2? ovalScale,
-  }) : ovalScale = ovalScale ?? Vector2(1.6, 1.0);
-}
 
 /// トラック描画 + セグメント区切りのガイドを表示するコンポーネント
 class TrackComponent extends PositionComponent {
@@ -70,6 +40,8 @@ class TrackComponent extends PositionComponent {
 
   Rect _ovalRect = Rect.zero;
   Vector2 _center = Vector2.zero();
+
+  bool get _ready => _ovalRect.width > 0 && _ovalRect.height > 0;
 
   @override
   void onGameResize(Vector2 size) {
@@ -123,6 +95,52 @@ class TrackComponent extends PositionComponent {
     final v = Vector2(tx, ty);
     v.normalize();
     return v;
+  }
+
+  // ---------------------------------------------------------------------------
+  // ★ 追加：ドラッグ&ドロップに必要な座標変換
+  // ---------------------------------------------------------------------------
+
+  /// TrackCoord -> 画面座標
+  Vector2 worldFromCoord(TrackCoord c) {
+    if (!_ready) return Vector2.zero();
+    return positionOnTrack(c.s, c.lane);
+  }
+
+  /// 画面座標 -> TrackCoord（s, lane）に近似変換
+  /// 楕円の厳密な逆変換は難しいが、編集用途にはこの近似で十分 “気持ちよく” 動く
+  TrackCoord coordFromWorld(Vector2 p) {
+    if (!_ready) return const TrackCoord(s: 0.0, lane: 0.0);
+
+    final dx = p.x - _center.x;
+    final dy = p.y - _center.y;
+
+    final rx = (_ovalRect.width / 2);
+    final ry = (_ovalRect.height / 2);
+
+    // 楕円を円として扱うために正規化して角度を出す
+    final nx = dx / (rx == 0 ? 1 : rx);
+    final ny = dy / (ry == 0 ? 1 : ry);
+
+    // theta = atan2(ny, nx)
+    final theta = math.atan2(ny, nx);
+
+    // positionOnTrack と同じ定義：
+    // theta = (-pi/2) + 2pi*s  =>  s = (theta + pi/2)/(2pi)
+    var s = (theta + math.pi / 2) / (math.pi * 2);
+    s = (s % 1.0 + 1.0) % 1.0; // 0..1 に正規化
+
+    // lane は、中心線から法線方向にどれだけ離れてるかで推定
+    final centerPos = positionOnTrack(s, 0.0);
+    final dir = forwardOnTrack(s);
+    final normal = Vector2(-dir.y, dir.x); // 左法線
+
+    final v = p - centerPos;
+    final dist = v.dot(normal); // 法線方向距離
+
+    final lane = (dist / (trackWidth * 0.35)).clamp(-1.0, 1.0);
+
+    return TrackCoord(s: s, lane: lane);
   }
 
   @override

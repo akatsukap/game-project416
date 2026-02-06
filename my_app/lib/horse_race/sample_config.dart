@@ -1,59 +1,80 @@
+import 'dart:math' as math;
+import 'package:flame/components.dart';
+
+import 'frame_color.dart';
+import 'models.dart';
 import 'track_component.dart';
 
-class Frame {
-  final int number;
-  const Frame(this.number);
-}
-
-class HorseSpec {
-  final String id;
-  final String name;
-  final Frame frame;
-
-  /// 内外の好み（-1.0..+1.0）
-  final double laneBias;
-
-  const HorseSpec({
-    required this.id,
-    required this.name,
-    required this.frame,
-    this.laneBias = 0.0,
-  });
-}
-
-class RaceConfig {
-  final RaceCourse course;
-  final List<HorseSpec> horses;
-
-  const RaceConfig({
-    required this.course,
-    required this.horses,
-  });
-}
-
-/// サンプル（まず動かすための最小）
 class SampleConfigs {
-  static RaceConfig tokyo6Horses() {
-    final course = RaceCourse(
-      id: 'tokyo',
-      name: 'Tokyo',
-      segments: const [
-        const RaceSegment(id: 'start', name: 'Start', timeEnd: 0.15, tighten: 2.0),
-        const RaceSegment(id: 'back', name: 'Back', timeEnd: 0.50, tighten: 3.0),
-        const RaceSegment(id: 'curve', name: 'Curve', timeEnd: 0.75, tighten: 4.0),
-        const RaceSegment(id: 'home', name: 'Home', timeEnd: 1.00, tighten: 2.5),
-      ],
+  /// 競馬場データ（将来ここに25場を増やす）
+  static RaceCourse courseOf(TrackId id) {
+    switch (id) {
+      case TrackId.tokyo:
+        return RaceCourse(
+          id: 'tokyo',
+          name: 'Tokyo',
+          ovalScale: Vector2(1.6, 1.0),
+          segments: const [
+            RaceSegment(id: 'start', name: 'Start', timeEnd: 0.15, tighten: 2.0),
+            RaceSegment(id: 'back', name: 'Back', timeEnd: 0.50, tighten: 3.0),
+            RaceSegment(id: 'curve', name: 'Curve', timeEnd: 0.75, tighten: 4.0),
+            RaceSegment(id: 'home', name: 'Home', timeEnd: 1.00, tighten: 2.5),
+          ],
+        );
+    }
+  }
+
+  static RaceConfig tokyo({required int horseCount}) {
+    return build(
+      settings: const RaceSettings(
+        raceName: 'Horse Race (Dev)',
+        trackId: TrackId.tokyo,
+        distanceM: 2000,
+        condition: TrackCondition.firm,
+      ),
+      horseCount: horseCount,
     );
+  }
 
-    final horses = const [
-      HorseSpec(id: 'h1', name: 'Horse 1', frame: Frame(1), laneBias: -0.3),
-      HorseSpec(id: 'h2', name: 'Horse 2', frame: Frame(2), laneBias: -0.1),
-      HorseSpec(id: 'h3', name: 'Horse 3', frame: Frame(3), laneBias: 0.0),
-      HorseSpec(id: 'h4', name: 'Horse 4', frame: Frame(4), laneBias: 0.1),
-      HorseSpec(id: 'h5', name: 'Horse 5', frame: Frame(5), laneBias: 0.2),
-      HorseSpec(id: 'h6', name: 'Horse 6', frame: Frame(6), laneBias: 0.35),
-    ];
+  static RaceConfig build({
+    required RaceSettings settings,
+    required int horseCount,
+    List<HorseSpec>? overrideHorses,
+    Map<Phase, PhasePlacement>? placements,
+  }) {
+    final course = courseOf(settings.trackId);
 
-    return RaceConfig(course: course, horses: horses);
+    // horses（UIで後から名前など編集可能）
+    final horses = overrideHorses ?? _generateHorses(horseCount);
+
+    return RaceConfig(
+      settings: settings.copyWith(),
+      course: course,
+      horses: horses,
+      placements: placements ?? const {},
+    );
+  }
+
+  static List<HorseSpec> _generateHorses(int horseCount) {
+    final rng = math.Random(42);
+
+    return List.generate(horseCount, (i) {
+      final horseNo = i + 1;
+      final frameNo = frameOfHorseNumber(horseNumber: horseNo, horseCount: horseCount);
+
+      // laneBias は “内好き/外好き” の雰囲気を入れる（後で編集UIで触れる）
+      final laneBias = ((frameNo - 4) / 4.0).clamp(-1.0, 1.0) * 0.6 + (rng.nextDouble() - 0.5) * 0.2;
+
+      // 毛色は適当に回す（後でUIで選択）
+      final coat = CoatColor.values[horseNo % CoatColor.values.length];
+
+      return HorseSpec(
+        id: 'h$horseNo',
+        name: 'Horse $horseNo',
+        frame: Frame(frameNo),
+        coatColor: coat,
+        laneBias: laneBias.clamp(-1.0, 1.0),
+      );
+    });
   }
 }
