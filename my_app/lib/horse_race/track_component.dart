@@ -25,15 +25,26 @@ class RaceCourse {
   final List<RaceSegment> segments;
 
   /// トラック形状（楕円）を描くための “外周の半径比”
-  /// 例: (1.6, 1.0) なら横長
+  /// 例: Vector2(1.6, 1.0) なら横長
+  ///
+  /// NOTE:
+  /// Vector2 は const 生成できないため、RaceCourse を const のまま維持するには
+  /// ovalScale は required にして呼び出し側で渡す。
   final Vector2 ovalScale;
+    const course = RaceCourse(
+      id: 'tokyo',
+      name: '東京',
+      segments: [ ... ],
+      ovalScale: Vector2(1.6, 1.0),
+    );
 
-  const RaceCourse({
-    required this.id,
-    required this.name,
-    required this.segments,
-    this.ovalScale = const Vector2(1.6, 1.0),
-  });
+
+  // const RaceCourse({
+  //   required this.id,
+  //   required this.name,
+  //   required this.segments,
+  //   required this.ovalScale,
+  // });
 }
 
 /// トラック描画 + セグメント区切りのガイドを表示するコンポーネント
@@ -98,7 +109,10 @@ class TrackComponent extends PositionComponent {
     final usableH = h - padding * 2;
 
     // 横長・縦長は ovalScale で調整
-    final base = math.min(usableW / course.ovalScale.x, usableH / course.ovalScale.y);
+    final base = math.min(
+      usableW / course.ovalScale.x,
+      usableH / course.ovalScale.y,
+    );
     _rx = (base * course.ovalScale.x) / 2;
     _ry = (base * course.ovalScale.y) / 2;
 

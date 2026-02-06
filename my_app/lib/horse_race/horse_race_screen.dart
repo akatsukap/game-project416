@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../horse_race/race_game.dart';
 import '../horse_race/race_director.dart';
-import '../horse_race/sample_config.dart';
+import 'sample_config.dart';
 
 /// ここから「コピペで起動」できる画面の
 /// - 競馬場（サンプル2種）とレース名を選べる

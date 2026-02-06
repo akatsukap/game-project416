@@ -1,4 +1,3 @@
-version: '3.3'  # バージョンを明示的に指定
 services:
   app:
     build: .
