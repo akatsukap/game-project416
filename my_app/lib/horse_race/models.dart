@@ -1,5 +1,16 @@
 import 'package:flame/components.dart';
 
+// NOTE:
+// 以前は track_component.dart 側に RaceCourse / RaceSegment を置いていたため、ここで
+// import 'track_component.dart'; // ← RaceCourse型を使うため（将来は別ファイルへ分離推奨）
+// のように参照していました。
+// ただし TrackComponent（描画/UI）と Model（データ定義）が絡むと循環参照やビルド崩れの原因になるので、
+// 今回は RaceCourse を「純粋なモデル」として race_course.dart に分離しています。
+import 'race_course.dart';
+
+// import 'track_component.dart'; // ← 旧：RaceCourse型を使うため（将来は別ファイルへ分離推奨）
+// → 推奨：RaceCourse は race_course.dart に分離して参照する（描画とデータの分離）
+
 /// 競馬場ID（拡張前提）
 enum TrackId { tokyo /* , kyoto, nakayama ... */ }
 
@@ -10,12 +21,29 @@ enum TrackCondition { firm, good, yielding, heavy }
 enum CoatColor {
   bay, // 鹿毛
   darkBay, // 黒鹿毛
-  brown, // 青鹿毛（表示名で青鹿毛にする）
+  brown, // 青鹿毛（表示名で青鹿毛）
   black, // 青毛
   chestnut, // 栗毛
   darkChestnut, // 栃栗毛
   gray, // 芦毛
   white, // 白毛
+}
+
+/// 脚質（UI/AI分析で使う）
+enum HorseRunStyle {
+  frontRunner, // 逃げ
+  stalker, // 先行
+  midPack, // 差し
+  closer, // 追込
+}
+
+extension HorseRunStyleLabel on HorseRunStyle {
+  String get label => switch (this) {
+        HorseRunStyle.frontRunner => '逃げ',
+        HorseRunStyle.stalker => '先行',
+        HorseRunStyle.midPack => '差し',
+        HorseRunStyle.closer => '追込',
+      };
 }
 
 enum Phase {
@@ -98,32 +126,62 @@ class Frame {
 /// 馬の素性（設定画面で編集される）
 class HorseSpec {
   final String id;
+
+  /// 馬番（1..18）: UIでの視認性・枠割表示・並び順のキー
+  final int horseNo;
+
+  /// 馬名（正式）
   final String name;
+
+  /// UI表示用の短縮名（空なら name を使う）
+  final String shortName;
+
   final Frame frame;
   final CoatColor coatColor;
+
+  /// 脚質（逃げ/先行/差し/追込）
+  final HorseRunStyle runStyle;
+
+  /// 特徴メモ（例：折り合い△、テン速い、末脚など）
+  final String memo;
 
   /// 内外の好み（-1..+1）
   final double laneBias;
 
   const HorseSpec({
     required this.id,
+    required this.horseNo,
     required this.name,
+    this.shortName = '',
     required this.frame,
     required this.coatColor,
+    this.runStyle = HorseRunStyle.stalker,
+    this.memo = '',
     this.laneBias = 0.0,
   });
 
+  /// 表示名（短縮名があれば優先）
+  String get displayName => (shortName.trim().isEmpty) ? name : shortName.trim();
+
   HorseSpec copyWith({
+    int? horseNo,
     String? name,
+    String? shortName,
     Frame? frame,
     CoatColor? coatColor,
+    HorseRunStyle? runStyle,
+    String? memo,
     double? laneBias,
   }) {
     return HorseSpec(
       id: id,
+      horseNo: horseNo ?? this.horseNo,
       name: name ?? this.name,
+      shortName: shortName ?? this.shortName,
       frame: frame ?? this.frame,
       coatColor: coatColor ?? this.coatColor,
+      runStyle: runStyle ?? this.runStyle,
+      memo: memo ?? this.memo,
       laneBias: laneBias ?? this.laneBias,
     );
   }
@@ -142,42 +200,17 @@ class TrackCoord {
 /// Phaseごとの配置（horseId -> TrackCoord）
 typedef PhasePlacement = Map<String, TrackCoord>;
 
-/// レース区間（セグメント）
-class RaceSegment {
-  final String id;
-  final String name;
-  final double timeEnd; // 0.0..1.0
-  final double tighten; // 馬群の“収束しやすさ”
-
-  const RaceSegment({
-    required this.id,
-    required this.name,
-    required this.timeEnd,
-    this.tighten = 2.0,
-  });
-}
-
-/// 競馬場（コース）設定
-class RaceCourse {
-  final String id;
-  final String name;
-  final List<RaceSegment> segments;
-
-  /// 例: (1.6, 1.0) なら横長
-  final Vector2 ovalScale;
-
-  RaceCourse({
-    required this.id,
-    required this.name,
-    required this.segments,
-    Vector2? ovalScale,
-  }) : ovalScale = ovalScale ?? Vector2(1.6, 1.0);
-}
-
 /// レース構成（ゲーム/再生の元データ）
 class RaceConfig {
   final RaceSettings settings;
+
+  // 旧：course は track_component 側の RaceCourse を使う（sample_config が作る）
+  // final dynamic course;
+
+  /// ★ dynamicやめる：保守性の要
+  /// RaceCourse は描画（TrackComponent）ではなく「コース定義モデル」なので race_course.dart に置く。
   final RaceCourse course;
+
   final List<HorseSpec> horses;
 
   /// Phase別の配置（編集で増える）

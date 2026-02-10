@@ -4,6 +4,8 @@ import 'package:flame/components.dart';
 import 'frame_color.dart';
 import 'models.dart';
 import 'track_component.dart';
+import 'race_course.dart';
+
 
 class SampleConfigs {
   /// 競馬場データ（将来ここに25場を増やす）
@@ -44,11 +46,10 @@ class SampleConfigs {
   }) {
     final course = courseOf(settings.trackId);
 
-    // horses（UIで後から名前など編集可能）
     final horses = overrideHorses ?? _generateHorses(horseCount);
 
     return RaceConfig(
-      settings: settings.copyWith(),
+      settings: settings,
       course: course,
       horses: horses,
       placements: placements ?? const {},
@@ -60,20 +61,31 @@ class SampleConfigs {
 
     return List.generate(horseCount, (i) {
       final horseNo = i + 1;
-      final frameNo = frameOfHorseNumber(horseNumber: horseNo, horseCount: horseCount);
 
-      // laneBias は “内好き/外好き” の雰囲気を入れる（後で編集UIで触れる）
-      final laneBias = ((frameNo - 4) / 4.0).clamp(-1.0, 1.0) * 0.6 + (rng.nextDouble() - 0.5) * 0.2;
+      // 「馬番 -> 枠番」計算（frame_color.dart側の関数を利用）
+      final frameNo =
+          frameOfHorseNumber(horseNumber: horseNo, horseCount: horseCount);
 
-      // 毛色は適当に回す（後でUIで選択）
+      final laneBias =
+          (((frameNo - 4) / 4.0).clamp(-1.0, 1.0) * 0.6) +
+              ((rng.nextDouble() - 0.5) * 0.2);
+
       final coat = CoatColor.values[horseNo % CoatColor.values.length];
+
+      // 脚質も軽く散らす（UIで後から編集）
+      final style =
+          HorseRunStyle.values[horseNo % HorseRunStyle.values.length];
 
       return HorseSpec(
         id: 'h$horseNo',
+        horseNo: horseNo,
         name: 'Horse $horseNo',
+        shortName: 'H$horseNo',
         frame: Frame(frameNo),
         coatColor: coat,
-        laneBias: laneBias.clamp(-1.0, 1.0),
+        runStyle: style,
+        memo: '',
+        laneBias: laneBias,
       );
     });
   }

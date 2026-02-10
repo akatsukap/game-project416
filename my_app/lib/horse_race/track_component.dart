@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'models.dart';
+import 'race_course.dart';
 
 
 /// トラック描画 + セグメント区切りのガイドを表示するコンポーネント

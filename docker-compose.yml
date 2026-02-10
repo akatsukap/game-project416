@@ -1,9 +1,19 @@
 services:
   app:
     build: .
+    working_dir: /app/my_app
     volumes:
       - .:/app
     tty: true
     stdin_open: true
     ports:
-      - "8081:8081"  # 左がWindows側、右がコンテナ側のポート番号
+          - "8081:8081"
+          - "8082:8082"  # 左がホスト(Windows/WSL)側、右がコンテナ側
+
+    # ---- Proxy（必要なときだけ有効化）----
+    # いまは proxy.example.com のダミーなので、実在の社内プロキシ等に置き換えてください
+    environment:
+      # - HTTP_PROXY=http://proxy.example.com:8080
+      # - HTTPS_PROXY=http://proxy.example.com:8080
+      # - NO_PROXY=localhost,127.0.0.1,::1,pub.dev,storage.googleapis.com
+      - NO_PROXY=localhost,127.0.0.1,::1

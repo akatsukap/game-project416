@@ -2,6 +2,8 @@ import 'dart:math' as math;
 import 'horse_component.dart';
 import 'track_component.dart';
 import 'models.dart';
+import 'race_course.dart';
+
 
 class RaceDirector {
   RaceDirector({
