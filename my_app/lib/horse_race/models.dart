@@ -1,15 +1,5 @@
 import 'package:flame/components.dart';
-
-// NOTE:
-// 以前は track_component.dart 側に RaceCourse / RaceSegment を置いていたため、ここで
-// import 'track_component.dart'; // ← RaceCourse型を使うため（将来は別ファイルへ分離推奨）
-// のように参照していました。
-// ただし TrackComponent（描画/UI）と Model（データ定義）が絡むと循環参照やビルド崩れの原因になるので、
-// 今回は RaceCourse を「純粋なモデル」として race_course.dart に分離しています。
-import 'race_course.dart';
-
-// import 'track_component.dart'; // ← 旧：RaceCourse型を使うため（将来は別ファイルへ分離推奨）
-// → 推奨：RaceCourse は race_course.dart に分離して参照する（描画とデータの分離）
+import 'race_course.dart'; // ← RaceCourse / RaceSegment の定義はここに固定
 
 /// 競馬場ID（拡張前提）
 enum TrackId { tokyo /* , kyoto, nakayama ... */ }
@@ -148,6 +138,10 @@ class HorseSpec {
   /// 内外の好み（-1..+1）
   final double laneBias;
 
+  /// 共同編集用：どのユーザーの予想か（匿名でも OK）
+  /// 例: 'u_xxx' / 'A' / 'guest-1' など
+  final String ownerId;
+
   const HorseSpec({
     required this.id,
     required this.horseNo,
@@ -158,6 +152,7 @@ class HorseSpec {
     this.runStyle = HorseRunStyle.stalker,
     this.memo = '',
     this.laneBias = 0.0,
+    this.ownerId = '',
   });
 
   /// 表示名（短縮名があれば優先）
@@ -172,6 +167,7 @@ class HorseSpec {
     HorseRunStyle? runStyle,
     String? memo,
     double? laneBias,
+    String? ownerId,
   }) {
     return HorseSpec(
       id: id,
@@ -183,6 +179,7 @@ class HorseSpec {
       runStyle: runStyle ?? this.runStyle,
       memo: memo ?? this.memo,
       laneBias: laneBias ?? this.laneBias,
+      ownerId: ownerId ?? this.ownerId,
     );
   }
 }
@@ -204,11 +201,7 @@ typedef PhasePlacement = Map<String, TrackCoord>;
 class RaceConfig {
   final RaceSettings settings;
 
-  // 旧：course は track_component 側の RaceCourse を使う（sample_config が作る）
-  // final dynamic course;
-
   /// ★ dynamicやめる：保守性の要
-  /// RaceCourse は描画（TrackComponent）ではなく「コース定義モデル」なので race_course.dart に置く。
   final RaceCourse course;
 
   final List<HorseSpec> horses;

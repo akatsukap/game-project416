@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
-import 'models.dart';
-import 'race_course.dart';
 
+import 'models.dart';
+import 'race_course.dart'; // ← RaceCourse/RaceSegment はここから
 
 /// トラック描画 + セグメント区切りのガイドを表示するコンポーネント
 class TrackComponent extends PositionComponent {
@@ -11,7 +11,9 @@ class TrackComponent extends PositionComponent {
 
   final RaceCourse course;
 
+  // ---------------------------------------------------------------------------
   // 見た目
+  // ---------------------------------------------------------------------------
   double trackWidth = 72.0;
   int laneCount = 6;
   double padding = 24.0;
@@ -72,10 +74,16 @@ class TrackComponent extends PositionComponent {
       height: (ry * 2) - shrink,
     );
   }
+  double _thetaForS(double s) {
+  // 左回り: + 2πs, 右回り: - 2πs
+  final sign = (course.direction == TrackDirection.left) ? 1.0 : -1.0;
+  return (-math.pi / 2) + (math.pi * 2 * s * sign);
+  }
+
 
   /// 進行度 s(0..1) からトラック上の位置を返す
   Vector2 positionOnTrack(double s, double laneOffset) {
-    final theta = (-math.pi / 2) + (math.pi * 2 * s);
+    final theta = _thetaForS(s);
 
     final x = _center.x + (_ovalRect.width / 2) * math.cos(theta);
     final y = _center.y + (_ovalRect.height / 2) * math.sin(theta);
@@ -90,11 +98,16 @@ class TrackComponent extends PositionComponent {
 
   /// 進行方向（単位ベクトル）
   Vector2 forwardOnTrack(double s) {
-    final theta = (-math.pi / 2) + (math.pi * 2 * s);
-    final tx = -math.sin(theta);
-    final ty = math.cos(theta);
-    final v = Vector2(tx, ty);
-    v.normalize();
+    final theta = _thetaForS(s);
+
+    // 接線方向：d/dθ の向きも sign に合わせる必要があるので注意
+    // 左回り sign=+1:  (-sin, cos)
+    // 右回り sign=-1:  ( sin, -cos)
+    final sign = (course.direction == TrackDirection.left) ? 1.0 : -1.0;
+    final tx = -math.sin(theta) * sign;
+    final ty =  math.cos(theta) * sign;
+
+    final v = Vector2(tx, ty)..normalize();
     return v;
   }
 

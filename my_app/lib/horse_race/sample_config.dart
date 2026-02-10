@@ -3,9 +3,7 @@ import 'package:flame/components.dart';
 
 import 'frame_color.dart';
 import 'models.dart';
-import 'track_component.dart';
 import 'race_course.dart';
-
 
 class SampleConfigs {
   /// 競馬場データ（将来ここに25場を増やす）
@@ -46,10 +44,11 @@ class SampleConfigs {
   }) {
     final course = courseOf(settings.trackId);
 
+    // horses（UIで後から名前など編集可能）
     final horses = overrideHorses ?? _generateHorses(horseCount);
 
     return RaceConfig(
-      settings: settings,
+      settings: settings.copyWith(),
       course: course,
       horses: horses,
       placements: placements ?? const {},
@@ -58,23 +57,27 @@ class SampleConfigs {
 
   static List<HorseSpec> _generateHorses(int horseCount) {
     final rng = math.Random(42);
+    final count = horseCount.clamp(2, 18);
 
-    return List.generate(horseCount, (i) {
+    return List.generate(count, (i) {
       final horseNo = i + 1;
 
-      // 「馬番 -> 枠番」計算（frame_color.dart側の関数を利用）
-      final frameNo =
-          frameOfHorseNumber(horseNumber: horseNo, horseCount: horseCount);
+      // 枠番号（1..8）※頭数依存
+      final frameNo = frameOfHorseNumber(
+        horseNumber: horseNo,
+        horseCount: count,
+      );
 
-      final laneBias =
-          (((frameNo - 4) / 4.0).clamp(-1.0, 1.0) * 0.6) +
-              ((rng.nextDouble() - 0.5) * 0.2);
+      // laneBias は雰囲気（内外）＋ちょいランダム
+      final baseBias = ((frameNo - 4) / 4.0).clamp(-1.0, 1.0) * 0.6;
+      final jitter = (rng.nextDouble() - 0.5) * 0.2;
+      final laneBias = (baseBias + jitter).clamp(-1.0, 1.0);
 
+      // 毛色：ローテ（後でUIで変更）
       final coat = CoatColor.values[horseNo % CoatColor.values.length];
 
-      // 脚質も軽く散らす（UIで後から編集）
-      final style =
-          HorseRunStyle.values[horseNo % HorseRunStyle.values.length];
+      // 脚質：分布を作る（逃げ少なめ）
+      final runStyle = _pickRunStyle(rng);
 
       return HorseSpec(
         id: 'h$horseNo',
@@ -83,10 +86,19 @@ class SampleConfigs {
         shortName: 'H$horseNo',
         frame: Frame(frameNo),
         coatColor: coat,
-        runStyle: style,
+        runStyle: runStyle,
         memo: '',
         laneBias: laneBias,
+        ownerId: '',
       );
     });
+  }
+
+  static HorseRunStyle _pickRunStyle(math.Random rng) {
+    final r = rng.nextDouble();
+    if (r < 0.12) return HorseRunStyle.frontRunner; // 逃げ
+    if (r < 0.45) return HorseRunStyle.stalker;     // 先行
+    if (r < 0.80) return HorseRunStyle.midPack;     // 差し
+    return HorseRunStyle.closer;                    // 追込
   }
 }
