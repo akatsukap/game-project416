@@ -43,6 +43,11 @@ class TrackComponent extends PositionComponent {
 
   bool get _ready => _ovalRect.width > 0 && _ovalRect.height > 0;
 
+  /// Canvas座標系（Y+が下）に合わせた「見た目の進行方向」符号
+  /// - left(反時計回り)を見せたい => θは減らす必要がある => -1
+  /// - right(時計回り)を見せたい => θは増やす            => +1
+  double get _dirSign => (course.direction == TrackDirection.left) ? -1.0 : 1.0;
+
   @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
@@ -72,11 +77,9 @@ class TrackComponent extends PositionComponent {
     );
   }
 
-  // 方向に応じたtheta
+  // s(0..1) -> θ
   double _thetaForS(double s) {
-    // 左回り:+ 2πs / 右回り:- 2πs
-    final sign = (course.direction == TrackDirection.left) ? 1.0 : -1.0;
-    return (-math.pi / 2) + (math.pi * 2 * s * sign);
+    return (-math.pi / 2) + (math.pi * 2 * s * _dirSign);
   }
 
   /// 進行度 s(0..1) からトラック上の位置を返す
@@ -102,11 +105,10 @@ class TrackComponent extends PositionComponent {
 
     final theta = _thetaForS(s);
 
-    // 左回り sign=+1: (-sin, cos)
-    // 右回り sign=-1: ( sin, -cos)
-    final sign = (course.direction == TrackDirection.left) ? 1.0 : -1.0;
-    final tx = -math.sin(theta) * sign;
-    final ty = math.cos(theta) * sign;
+    // θが増える向きが進行方向になるように _dirSign を掛ける
+    // 基本接線: (-sinθ, cosθ)
+    final tx = -math.sin(theta) * _dirSign;
+    final ty = math.cos(theta) * _dirSign;
 
     return Vector2(tx, ty)..normalize();
   }
@@ -129,11 +131,8 @@ class TrackComponent extends PositionComponent {
 
     final theta = math.atan2(ny, nx);
 
-    // direction に応じて s を逆算
-    final sign = (course.direction == TrackDirection.left) ? 1.0 : -1.0;
-
-    // theta = (-pi/2) + 2pi*s*sign  =>  s = (theta + pi/2)/(2pi*sign)
-    var s = (theta + math.pi / 2) / (math.pi * 2 * sign);
+    // theta = (-pi/2) + 2pi*s*_dirSign  =>  s = (theta + pi/2)/(2pi*_dirSign)
+    var s = (theta + math.pi / 2) / (math.pi * 2 * _dirSign);
     s = (s % 1.0 + 1.0) % 1.0;
 
     final centerPos = positionOnTrack(s, 0.0);
