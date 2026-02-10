@@ -1,8 +1,9 @@
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
-import 'models.dart';
+
 import 'frame_color.dart';
+import 'models.dart';
 
 class HorseComponent extends PositionComponent with DragCallbacks {
   HorseComponent({
@@ -36,25 +37,35 @@ class HorseComponent extends PositionComponent with DragCallbacks {
 
   @override
   bool onDragStart(DragStartEvent event) {
+    super.onDragStart(event); // ★ mustCallSuper 対応
     _dragging = true;
-    return true;
+    return true; // このコンポーネントがドラッグを消費する
   }
 
   @override
   bool onDragUpdate(DragUpdateEvent event) {
-    position += event.localDelta; // そのまま追従（気持ちいい）
+    super.onDragUpdate(event); // ★ mustCallSuper 対応
+
+    // ★ event.delta は「ゲーム(親)座標系」での移動量
+    // localDelta を使うと、回転/スケール/カメラ導入後にズレやすい
+    position += event.localDelta;
     return true;
   }
 
   @override
   bool onDragEnd(DragEndEvent event) {
+    super.onDragEnd(event); // ★ mustCallSuper 対応
     _dragging = false;
+
+    // position は HorseComponent の親(=game)座標 = world座標
     onDraggedEnd(spec.id, position.clone());
+
     return true;
   }
 
   @override
   bool onDragCancel(DragCancelEvent event) {
+    super.onDragCancel(event); // ★ mustCallSuper 対応
     _dragging = false;
     onDraggedEnd(spec.id, position.clone());
     return true;
@@ -73,7 +84,7 @@ class HorseComponent extends PositionComponent with DragCallbacks {
       framePaint,
     );
 
-    // drag outline（指で掴んでる感）
+    // drag outline（掴んでる感）
     if (_dragging) {
       final o = Paint()
         ..style = PaintingStyle.stroke
@@ -82,11 +93,17 @@ class HorseComponent extends PositionComponent with DragCallbacks {
       canvas.drawCircle(Offset(size.x / 2, size.y / 2), size.x / 2 - 1, o);
     }
 
-    // number（馬番の代わりに とりあえず枠番号でもOK。horseNoを後で追加するなら差し替え）
+    // 表示する番号：horseNo があるなら horseNo、なければ枠番号
+    final displayNo = (spec.horseNo != 0) ? spec.horseNo : spec.frame.number;
+
     final tp = TextPainter(
       text: TextSpan(
-        text: spec.frame.number.toString(),
-        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+        text: displayNo.toString(),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();

@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 
 import 'horse_component.dart';
-import 'track_component.dart';
 import 'models.dart';
 import 'race_course.dart';
+import 'track_component.dart';
 
 class RaceDirector {
   RaceDirector({
@@ -19,7 +19,7 @@ class RaceDirector {
   final TrackComponent track;
   final List<HorseComponent> horses;
 
-  /// Phase -> (horseId -> TrackCoord)
+  /// Phaseごとの配置（編集で変わる）
   final Map<Phase, PhasePlacement> placements;
 
   final Phase Function() getPhase;
@@ -27,65 +27,78 @@ class RaceDirector {
 
   double _baseSpeedSPerSec = 0.06;
 
+  /// 初期配置：まず placements があればそれを反映。
+  /// なければ「Start整列（馬番が内→外）」にする。
   void initPositions() {
-    // まずは“今のPhaseの配置”を反映（なければ自動生成して反映）
-    applyPhasePlacement(forceGenerateIfEmpty: true);
+    if (applyPhasePlacement()) return;
 
-    // もし track の resize 前などで座標がまだ作れないケースがあるなら、
-    // TrackComponent側の_readyで弾かれるので、最初のフレームで再反映してもOK。
+    _applyDefaultLineup(phase: Phase.start);
   }
 
-  /// 現在Phaseの placements を馬に反映する
-  ///
-  /// - placements が空/無い場合:
-  ///   - forceGenerateIfEmpty=true なら「馬番順に内→外で整列」配置を自動生成して反映
-  ///   - false なら何もしない
-  void applyPhasePlacement({bool forceGenerateIfEmpty = false}) {
+  /// 現在Phaseの placements があれば馬に反映する（なければ false）
+  bool applyPhasePlacement() {
     final p = getPhase();
     final map = placements[p];
+    if (map == null || map.isEmpty) return false;
 
-    if (map == null || map.isEmpty) {
-      if (!forceGenerateIfEmpty) return;
-
-      // ★ここが今回の要件：Phaseを選んだ瞬間、馬番順に内→外へ整列
-      final generated = _defaultPlacementForPhase(p);
-      placements[p] = generated;
-    }
-
-    final now = placements[p]!;
     for (final h in horses) {
-      final c = now[h.spec.id];
+      final c = map[h.spec.id];
       if (c == null) continue;
 
       h.s = c.s;
       h.lane = c.lane;
       h.targetS = h.s;
       h.targetLane = h.lane;
-
-      // TrackCoord -> 画面座標
       h.position = track.worldFromCoord(c);
 
-      // headingも更新しておくと見た目が安定
+      final fwd = track.forwardOnTrack(h.s);
+      h.headingRad = math.atan2(fwd.y, fwd.x);
+    }
+    return true;
+  }
+
+  /// Phase が切り替わった時に呼ぶ想定：
+  /// - placementsが無ければ自動生成
+  /// - 生成/既存を反映
+  void ensureAndApplyPlacementForPhase(Phase phase) {
+    final current = placements[phase];
+    if (current == null || current.isEmpty) {
+      placements[phase] = _defaultPlacementForPhase(phase);
+    }
+
+    final now = placements[phase]!;
+    for (final h in horses) {
+      final c = now[h.spec.id];
+      if (c == null) continue;
+      h.s = c.s;
+      h.lane = c.lane;
+      h.targetS = h.s;
+      h.targetLane = h.lane;
+      h.position = track.worldFromCoord(c);
+
       final fwd = track.forwardOnTrack(h.s);
       h.headingRad = math.atan2(fwd.y, fwd.x);
     }
   }
 
+  /// レース更新（通常モード）
   void update(double dt) {
-    // 編集中は“勝手に動かない”（race_game側で return してる前提）
-    // ここはレース再生時だけ使う
-    final seg = _segmentForS(horses.isEmpty ? 0.0 : horses.first.s);
+    if (horses.isEmpty) return;
+
+    final seg = _segmentForS(horses.first.s);
     final tighten = seg?.tighten ?? 2.0;
 
     for (final h in horses) {
+      // 編集モードでは update しない（ドラッグ位置を尊重）
+      if (isEditMode()) continue;
+
       h.s = (h.s + _baseSpeedSPerSec * dt) % 1.0;
 
-      final noise = math.sin((h.s * math.pi * 2) + h.spec.frame.number) * 0.15;
+      final noise = math.sin((h.s * math.pi * 2) + h.spec.horseNo) * 0.15;
       h.targetLane =
           (h.spec.laneBias * 0.25 + noise * (tighten * 0.12)).clamp(-0.95, 0.95);
 
-      // lane補間（なめらか）
-      final k = 4.0;
+      const k = 4.0;
       h.lane = h.lane + (h.targetLane - h.lane) * (1 - math.exp(-k * dt));
 
       h.position = track.positionOnTrack(h.s, h.lane);
@@ -103,11 +116,65 @@ class RaceDirector {
   }
 
   // ---------------------------------------------------------------------------
-  // ★追加：Phaseごとの「初期整列」配置
+  // Default lineup / placements
   // ---------------------------------------------------------------------------
 
-  PhasePlacement _defaultPlacementForPhase(Phase phase) {
-    // Phaseごとのアンカーs（course側の簡易テーブル）
+  void _applyDefaultLineup({required Phase phase}) {
+    final baseS = _anchorSForPhase(phase);
+
+    // 馬番昇順（1が内側の先頭になるように）
+    final sorted = [...horses]
+      ..sort((a, b) => a.spec.horseNo.compareTo(b.spec.horseNo));
+
+    final n = sorted.length;
+
+    // 内→外 を lane: -0.85 .. +0.85 に均等割り
+    double laneAt(int i) {
+      if (n <= 1) return 0.0;
+      final t = i / (n - 1);
+      return (-0.85 + (1.70 * t)).clamp(-0.95, 0.95);
+    }
+
+    for (int i = 0; i < n; i++) {
+      final h = sorted[i];
+      final lane = laneAt(i);
+
+      h.s = baseS;
+      h.lane = lane;
+
+      h.targetS = h.s;
+      h.targetLane = h.lane;
+
+      h.position = track.positionOnTrack(h.s, h.lane);
+
+      final fwd = track.forwardOnTrack(h.s);
+      h.headingRad = math.atan2(fwd.y, fwd.x);
+    }
+  }
+
+  Map<String, TrackCoord> _defaultPlacementForPhase(Phase phase) {
+    final baseS = _anchorSForPhase(phase);
+
+    final sorted = [...horses]
+      ..sort((a, b) => a.spec.horseNo.compareTo(b.spec.horseNo));
+
+    final n = sorted.length;
+
+    double laneAt(int i) {
+      if (n <= 1) return 0.0;
+      final t = i / (n - 1);
+      return (-0.85 + (1.70 * t)).clamp(-0.95, 0.95);
+    }
+
+    final map = <String, TrackCoord>{};
+    for (int i = 0; i < n; i++) {
+      final h = sorted[i];
+      map[h.spec.id] = TrackCoord(s: baseS, lane: laneAt(i));
+    }
+    return map;
+  }
+
+  double _anchorSForPhase(Phase phase) {
     final phaseId = switch (phase) {
       Phase.start => 'start',
       Phase.firstCorner => 'firstCorner',
@@ -116,27 +183,6 @@ class RaceDirector {
       Phase.homestretch => 'homestretch',
       Phase.goal => 'goal',
     };
-    final baseS = config.course.anchorSForPhase(phaseId);
-
-    // horseNoで昇順に並べる（馬番順）
-    final sorted = [...horses]
-      ..sort((a, b) => a.spec.horseNo.compareTo(b.spec.horseNo));
-
-    // laneを -1..+1 に均等割り（内→外）
-    final n = sorted.length;
-    double laneAt(int i) {
-      if (n <= 1) return 0.0;
-      return -1.0 + (2.0 * i / (n - 1));
-    }
-
-    final map = <String, TrackCoord>{};
-    for (int i = 0; i < n; i++) {
-      final h = sorted[i];
-      map[h.spec.id] = TrackCoord(
-        s: baseS,
-        lane: laneAt(i),
-      );
-    }
-    return map;
+    return config.course.anchorSForPhase(phaseId);
   }
 }

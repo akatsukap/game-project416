@@ -1,9 +1,18 @@
-import 'package:flame/components.dart';
 import 'race_course.dart'; // ← RaceCourse / RaceSegment の定義はここに固定
 
 /// 競馬場ID（拡張前提）
-enum TrackId { tokyo /* , kyoto, nakayama ... */ }
-
+enum TrackId {
+  tokyo,
+  chukyo,
+  niigata,
+  nakayama,
+  hanshin,
+  kyoto,
+  sapporo,
+  hakodate,
+  fukushima,
+  kokura,
+}
 /// 馬場状態（拡張前提）
 enum TrackCondition { firm, good, yielding, heavy }
 

@@ -6,13 +6,35 @@ import 'models.dart';
 import 'race_course.dart';
 
 class SampleConfigs {
-  /// 競馬場データ（将来ここに25場を増やす）
+  /// 競馬場データ（必要ならここに増やす）
   static RaceCourse courseOf(TrackId id) {
+    // 指定ルール：左/右回り
+    final direction = switch (id) {
+      TrackId.tokyo || TrackId.chukyo || TrackId.niigata => TrackDirection.left,
+      _ => TrackDirection.right,
+    };
+
     switch (id) {
       case TrackId.tokyo:
         return RaceCourse(
           id: 'tokyo',
-          name: 'Tokyo',
+          name: '東京',
+          direction: direction,
+          ovalScale: Vector2(1.6, 1.0),
+          segments: const [
+            RaceSegment(id: 'start', name: 'Start', timeEnd: 0.15, tighten: 2.0),
+            RaceSegment(id: 'back', name: 'Back', timeEnd: 0.50, tighten: 3.0),
+            RaceSegment(id: 'curve', name: 'Curve', timeEnd: 0.75, tighten: 4.0),
+            RaceSegment(id: 'home', name: 'Home', timeEnd: 1.00, tighten: 2.5),
+          ],
+        );
+
+      default:
+        // まだ未実装の競馬場は仮で同じ形（directionだけは正しい）
+        return RaceCourse(
+          id: id.name,
+          name: id.name,
+          direction: direction,
           ovalScale: Vector2(1.6, 1.0),
           segments: const [
             RaceSegment(id: 'start', name: 'Start', timeEnd: 0.15, tighten: 2.0),
@@ -43,8 +65,6 @@ class SampleConfigs {
     Map<Phase, PhasePlacement>? placements,
   }) {
     final course = courseOf(settings.trackId);
-
-    // horses（UIで後から名前など編集可能）
     final horses = overrideHorses ?? _generateHorses(horseCount);
 
     return RaceConfig(
@@ -62,21 +82,16 @@ class SampleConfigs {
     return List.generate(count, (i) {
       final horseNo = i + 1;
 
-      // 枠番号（1..8）※頭数依存
       final frameNo = frameOfHorseNumber(
         horseNumber: horseNo,
         horseCount: count,
       );
 
-      // laneBias は雰囲気（内外）＋ちょいランダム
       final baseBias = ((frameNo - 4) / 4.0).clamp(-1.0, 1.0) * 0.6;
       final jitter = (rng.nextDouble() - 0.5) * 0.2;
       final laneBias = (baseBias + jitter).clamp(-1.0, 1.0);
 
-      // 毛色：ローテ（後でUIで変更）
       final coat = CoatColor.values[horseNo % CoatColor.values.length];
-
-      // 脚質：分布を作る（逃げ少なめ）
       final runStyle = _pickRunStyle(rng);
 
       return HorseSpec(
@@ -96,9 +111,9 @@ class SampleConfigs {
 
   static HorseRunStyle _pickRunStyle(math.Random rng) {
     final r = rng.nextDouble();
-    if (r < 0.12) return HorseRunStyle.frontRunner; // 逃げ
-    if (r < 0.45) return HorseRunStyle.stalker;     // 先行
-    if (r < 0.80) return HorseRunStyle.midPack;     // 差し
-    return HorseRunStyle.closer;                    // 追込
+    if (r < 0.12) return HorseRunStyle.frontRunner;
+    if (r < 0.45) return HorseRunStyle.stalker;
+    if (r < 0.80) return HorseRunStyle.midPack;
+    return HorseRunStyle.closer;
   }
 }
