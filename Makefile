@@ -1,23 +1,4 @@
 # Makefile (final) for game-project416
-#
-# 前提:
-# - リポジトリルートに docker-compose.yml があること
-# - Docker Desktop が起動していること
-# - Flutter / Firebase CLI がコンテナ内（app）に入っていること
-#
-# docker-compose.yml（添付内容）前提:
-# - service: app
-# - volume: .:/app
-# - ports: 8081:8081
-#
-# 使い方:
-#   make help
-#   make up
-#   make shell
-#   make flutter-web
-#   make emulators
-#   make lint
-#   make status
 
 SHELL := /bin/bash
 
@@ -25,9 +6,13 @@ COMPOSE     := docker compose
 SERVICE     := app
 APP_ROOT    := /app
 FLUTTER_DIR := my_app
+
 PORT        ?= 8081
 HOST        ?= 0.0.0.0
 EMULATORS   ?= firestore,auth,functions
+
+# ✅ デフォルトはホーム（他ゲームと共存）
+FLUTTER_TARGET ?= lib/main.dart
 
 .PHONY: help
 help:
@@ -35,31 +20,34 @@ help:
 	@echo "game-project416 Makefile targets"
 	@echo ""
 	@echo "[Docker]"
-	@echo "  make up            Build & start containers (detached)"
-	@echo "  make down          Stop & remove containers (keep volumes)"
-	@echo "  make down-v        Stop & remove containers and volumes (DANGER)"
-	@echo "  make restart       Restart containers"
-	@echo "  make ps            Show container status"
-	@echo "  make logs          Follow logs (all)"
-	@echo "  make logs-app      Follow logs (app)"
-	@echo "  make shell         Open bash in app container"
+	@echo "  make up              Build & start containers (detached)"
+	@echo "  make down            Stop & remove containers (keep volumes)"
+	@echo "  make down-v          Stop & remove containers and volumes (DANGER)"
+	@echo "  make restart         Restart containers"
+	@echo "  make ps              Show container status"
+	@echo "  make logs            Follow logs (all)"
+	@echo "  make logs-app        Follow logs (app)"
+	@echo "  make shell           Open bash in app container"
 	@echo ""
 	@echo "[Flutter (in container)]"
-	@echo "  make flutter-get   flutter pub get"
-	@echo "  make lint          flutter analyze"
-	@echo "  make test          flutter test"
-	@echo "  make flutter-web   flutter run web-server on $(HOST):$(PORT)"
+	@echo "  make flutter-get     flutter pub get"
+	@echo "  make lint            flutter analyze"
+	@echo "  make test            flutter test"
+	@echo "  make flutter-web     flutter run web-server on $(HOST):$(PORT) (target=$(FLUTTER_TARGET))"
+	@echo "  make flutter-web-horse  flutter run horse_race/dev_main.dart (escape hatch)"
 	@echo ""
 	@echo "[Firebase (in container)]"
 	@echo "  make firebase-login  firebase login --no-localhost"
 	@echo "  make emulators       firebase emulators:start --only $(EMULATORS)"
 	@echo ""
 	@echo "[Project checks]"
-	@echo "  make status        Quick health check (ps + versions)"
+	@echo "  make status          Quick health check (ps + versions)"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make up && make status"
 	@echo "  make flutter-web"
+	@echo "  make flutter-web FLUTTER_TARGET=lib/main.dart"
+	@echo "  make flutter-web-horse"
 	@echo "  make emulators EMULATORS=firestore,auth"
 	@echo ""
 
@@ -71,8 +59,14 @@ _guard_root:
 		exit 1; \
 	fi
 
+# ✅ 非常駐コマンド用（TTY不要でOK）
 define exec_app
 	$(COMPOSE) exec -T $(SERVICE) bash -lc "$(1)"
+endef
+
+# ✅ 常駐コマンド用（flutter run / emulators はTTYあり。Ctrl+Cで止められる）
+define exec_app_tty
+	$(COMPOSE) exec $(SERVICE) bash -lc "$(1)"
 endef
 
 # ---- Docker ----
@@ -124,23 +118,33 @@ lint: _guard_root
 test: _guard_root
 	$(call exec_app,cd $(APP_ROOT)/$(FLUTTER_DIR) && flutter test)
 
+# ✅ デフォルトはホーム（lib/main.dart）を起動
 .PHONY: flutter-web
 flutter-web: _guard_root
 	@echo "Flutter web-server: http://localhost:$(PORT)"
+	@echo "Target: $(FLUTTER_TARGET)"
 	@echo "Stop with Ctrl+C"
-	$(call exec_app,cd $(APP_ROOT)/$(FLUTTER_DIR) && flutter pub get && flutter run -d web-server --web-hostname $(HOST) --web-port $(PORT))
+	$(call exec_app_tty,cd $(APP_ROOT)/$(FLUTTER_DIR) && flutter pub get && flutter run -d web-server --web-hostname $(HOST) --web-port $(PORT) -t $(FLUTTER_TARGET))
+
+# ✅ 競馬だけ単体起動したいときの逃げ道（残す）
+.PHONY: flutter-web-horse
+flutter-web-horse: _guard_root
+	@echo "Flutter web-server: http://localhost:$(PORT)"
+	@echo "Target: lib/horse_race/dev_main.dart"
+	@echo "Stop with Ctrl+C"
+	$(call exec_app_tty,cd $(APP_ROOT)/$(FLUTTER_DIR) && flutter pub get && flutter run -d web-server --web-hostname $(HOST) --web-port $(PORT) -t lib/horse_race/dev_main.dart)
 
 # ---- Firebase ----
 .PHONY: firebase-login
 firebase-login: _guard_root
 	@echo "Firebase login: follow the printed URL and paste code in terminal."
-	$(call exec_app,cd $(APP_ROOT)/$(FLUTTER_DIR) && firebase login --no-localhost)
+	$(call exec_app_tty,cd $(APP_ROOT)/$(FLUTTER_DIR) && firebase login --no-localhost)
 
 .PHONY: emulators
 emulators: _guard_root
 	@echo "Starting Firebase emulators: $(EMULATORS)"
 	@echo "Stop with Ctrl+C"
-	$(call exec_app,cd $(APP_ROOT) && firebase emulators:start --only $(EMULATORS))
+	$(call exec_app_tty,cd $(APP_ROOT) && firebase emulators:start --only $(EMULATORS))
 
 # ---- Project checks ----
 .PHONY: status
