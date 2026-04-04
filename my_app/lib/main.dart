@@ -1,12 +1,14 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:my_app/models/party_game_definition.dart';
 
 import 'firebase_options.dart';
 import 'head_ball/screens/head_ball_menu_screen.dart';
 import 'head_ball/screens/local_match_screen.dart';
 import 'screens/game_home_screen.dart';
+import 'screens/game_idea_screen.dart';
+import 'screens/horse_race_screen.dart';
 import 'screens/game_screen.dart';
 import 'screens/mode_selection_screen.dart';
 import 'screens/multiplayer_game_screen.dart';
@@ -73,6 +75,7 @@ class MyApp extends StatelessWidget {
         '/player-selection': (context) => const PlayerSelectionScreen(),
         '/head-ball-menu': (context) => const HeadBallMenuScreen(),
         '/head-ball-local-match': (context) => const LocalMatchScreen(),
+        '/horse-race': (context) => const HorseRaceScreen(),
       },
       // 引数を受け取るルート
       onGenerateRoute: (settings) {
@@ -112,6 +115,11 @@ class MyApp extends StatelessWidget {
               roomCode: args['roomCode'] as String,
               loserId: args['loserId'] as String,
             ),
+          );
+        } else if (settings.name == '/game-idea') {
+          final game = settings.arguments as PartyGameDefinition;
+          return MaterialPageRoute(
+            builder: (context) => GameIdeaScreen(game: game),
           );
         }
         return null;

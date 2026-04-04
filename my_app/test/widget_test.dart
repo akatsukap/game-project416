@@ -1,30 +1,37 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:my_app/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  testWidgets('ホーム画面で優先ゲームが表示される', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
+    await tester.pumpAndSettle();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('みんなでゲーム会'), findsOneWidget);
+    expect(find.text('最優先'), findsOneWidget);
+    expect(find.text('競馬ダッシュ'), findsOneWidget);
+    expect(find.text('ババ抜き'), findsOneWidget);
+    expect(find.text('ヘッドボール'), findsOneWidget);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  testWidgets('競馬ダッシュを押すと競馬画面へ遷移', (WidgetTester tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.pumpAndSettle();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    await tester.tap(find.text('競馬ダッシュ'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('飲み会競馬ダッシュ'), findsOneWidget);
+    expect(find.textContaining('最優先ゲーム: 競馬レース'), findsOneWidget);
+  });
+
+  testWidgets('未実装ゲームはアイデア画面に遷移できる', (WidgetTester tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('ポーカー'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('開発メモ'), findsOneWidget);
+    expect(find.textContaining('タグ:'), findsOneWidget);
   });
 }
