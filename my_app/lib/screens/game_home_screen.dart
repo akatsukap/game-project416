@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/data/party_game_catalog.dart';
+import 'package:my_app/models/party_game_definition.dart';
 import 'package:my_app/services/auth_service.dart';
 
-/// ゲームホーム画面（ニックネーム入力画面）
-///
-/// 複数のゲームを選択できる画面（将来的な拡張用）
 class GameHomeScreen extends StatefulWidget {
   const GameHomeScreen({super.key});
 
@@ -22,9 +21,7 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
     super.dispose();
   }
 
-  /// 開始ボタンが押されたときの処理（ババ抜き用）
   Future<void> _onBabanukiPressed() async {
-    // ニックネーム入力ダイアログを表示
     final nickname = await showDialog<String>(
       context: context,
       builder: (context) => _NicknameInputDialog(
@@ -33,78 +30,30 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
       ),
     );
 
-    // キャンセルされた場合は何もしない
-    if (nickname == null) {
-      return;
-    }
+    if (nickname == null) return;
 
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Firebase匿名認証を実行
       final user = await _authService.signInAnonymously();
-
       if (user == null) {
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('エラー'),
-              content: const Text('認証に失敗しました。もう一度お試しください。'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('閉じる'),
-                ),
-              ],
-            ),
-          );
-        }
-        setState(() {
-          _isLoading = false;
-        });
+        if (!mounted) return;
+        _showErrorDialog('認証に失敗しました。もう一度お試しください。');
         return;
       }
 
-      // 認証成功後、モード選択画面に遷移
-      if (mounted) {
-        Navigator.pushNamed(
-          context,
-          '/babanuki-mode-selection',
-          arguments: nickname,
-        );
-      }
+      if (!mounted) return;
+      Navigator.pushNamed(
+        context,
+        '/babanuki-mode-selection',
+        arguments: nickname,
+      );
     } catch (e) {
-      // エラーメッセージを整形
-      String errorMsg = e.toString();
-      if (errorMsg.startsWith('Exception: ')) {
-        errorMsg = errorMsg.substring('Exception: '.length);
-      }
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      // エラーダイアログを表示
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('エラー'),
-            content: SingleChildScrollView(
-              child: Text(errorMsg, style: const TextStyle(fontSize: 14)),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('閉じる'),
-              ),
-            ],
-          ),
-        );
-      }
+      final errorMsg = e.toString().replaceFirst('Exception: ', '');
+      if (!mounted) return;
+      _showErrorDialog(errorMsg);
     } finally {
       if (mounted) {
         setState(() {
@@ -114,7 +63,6 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
     }
   }
 
-  /// ヘッドボール開始（ローディング表示の統一用）
   Future<void> _onHeadBallPressed() async {
     if (_isLoading) return;
 
@@ -134,6 +82,157 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
     }
   }
 
+  void _showErrorDialog(String message) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('エラー'),
+        content: SingleChildScrollView(
+          child: Text(message, style: const TextStyle(fontSize: 14)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('閉じる'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _onGameSelected(PartyGameDefinition game) async {
+    if (_isLoading) return;
+
+    if (game.id == 'babanuki') {
+      await _onBabanukiPressed();
+      return;
+    }
+
+    if (game.id == 'head_ball') {
+      await _onHeadBallPressed();
+      return;
+    }
+
+    if (game.routeName != null) {
+      Navigator.pushNamed(context, game.routeName!);
+      return;
+    }
+
+    Navigator.pushNamed(context, '/game-idea', arguments: game);
+  }
+
+  Widget _buildGameTile(PartyGameDefinition game) {
+    final availabilityColor = PartyGameCatalog.availabilityColor(game.availability);
+
+    return Card(
+      child: InkWell(
+        onTap: _isLoading ? null : () => _onGameSelected(game),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: game.color.withValues(alpha: 0.15),
+                    child: Icon(game.icon, color: game.color),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      game.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: availabilityColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      PartyGameCatalog.availabilityLabel(game.availability),
+                      style: TextStyle(
+                        color: availabilityColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(game.description, style: const TextStyle(fontSize: 13)),
+              if (game.tags.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: game.tags
+                      .map(
+                        (tag) => Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            '#$tag',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategorySection(PartyGameCategory category) {
+    final items = PartyGameCatalog.games
+        .where((game) => game.category == category)
+        .toList();
+
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 12),
+        Text(
+          PartyGameCatalog.categoryLabel(category),
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...items.map(_buildGameTile),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -151,163 +250,44 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
         ),
         child: SafeArea(
           child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // アプリアイコン
-                  Container(
-                    padding: const EdgeInsets.all(32),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.games,
-                      size: 80,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  // アプリタイトル
-                  Text(
-                    'カードゲーム集',
-                    style: TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withValues(alpha: 0.3),
-                          offset: const Offset(2, 2),
-                          blurRadius: 4,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Card Game Collection',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white.withValues(alpha: 0.9),
-                      letterSpacing: 2,
-                    ),
-                  ),
-                  const SizedBox(height: 60),
-                  // ニックネーム入力カード
-                  Container(
-                    constraints: const BoxConstraints(maxWidth: 400),
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 920),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Stack(
+                  children: [
+                    ListView(
                       children: [
-                        // 説明テキスト
-                        Text(
-                          'ゲームを選択してください',
+                        const Text(
+                          'みんなでゲーム会',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 44,
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            color: Colors.purple.shade700,
                           ),
-                          textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 24),
-
-                        // ババ抜きボタン
-                        ElevatedButton(
-                          onPressed: _isLoading ? null : _onBabanukiPressed,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.purple.shade700,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 4,
+                        Text(
+                          '競馬を最優先に、飲み会で遊べるゲームをホームから選択',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 14,
                           ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
-                                  ),
-                                )
-                              : const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.style),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      'ババ抜き',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
                         ),
-                        const SizedBox(height: 16),
-
-                        // ヘッドボールボタン（child 重複を解消）
-                        ElevatedButton(
-                          onPressed: _isLoading ? null : _onHeadBallPressed,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green.shade700,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 4,
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
-                                  ),
-                                )
-                              : const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.sports_soccer),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      'ヘッドボール',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                        ),
+                        _buildCategorySection(PartyGameCategory.priority),
+                        _buildCategorySection(PartyGameCategory.trump),
+                        _buildCategorySection(PartyGameCategory.quiz),
+                        _buildCategorySection(PartyGameCategory.social),
+                        _buildCategorySection(PartyGameCategory.casual),
+                        const SizedBox(height: 40),
                       ],
                     ),
-                  ),
-                ],
+                    if (_isLoading)
+                      const Align(
+                        alignment: Alignment.center,
+                        child: CircularProgressIndicator(color: Colors.white),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -317,15 +297,11 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
   }
 }
 
-/// ニックネーム入力ダイアログ
 class _NicknameInputDialog extends StatefulWidget {
+  const _NicknameInputDialog({required this.controller, required this.authService});
+
   final TextEditingController controller;
   final AuthService authService;
-
-  const _NicknameInputDialog({
-    required this.controller,
-    required this.authService,
-  });
 
   @override
   State<_NicknameInputDialog> createState() => _NicknameInputDialogState();
@@ -352,7 +328,7 @@ class _NicknameInputDialogState extends State<_NicknameInputDialog> {
               border: const OutlineInputBorder(),
             ),
             maxLength: 20,
-            onChanged: (value) {
+            onChanged: (_) {
               if (_errorMessage != null) {
                 setState(() {
                   _errorMessage = null;
