@@ -247,3 +247,8 @@ flutter doctor を全て OK にする
 flutter run -d chrome で起動
 
 途中で詰まったらAIに聞こう！
+
+
+## 📘 初学者向けの開発手順書
+
+- 日本語の手順書（コピー&ペースト用）: [DEVELOPMENT_WORKFLOW_JA.md](DEVELOPMENT_WORKFLOW_JA.md)
